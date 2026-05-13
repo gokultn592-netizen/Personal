@@ -23,3 +23,7 @@ python -c "import whisper; print('Whisper OK')"
 python -c "import edge_tts; print('Edge TTS OK')"
 
 pip list
+
+
+
+// For movies make a seperate folder called movie_configs
