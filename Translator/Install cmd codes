@@ -1,0 +1,25 @@
+cd /d D:\tamil_translator
+
+py -3.10 -m venv venv
+
+call venv\Scripts\activate
+
+python -m pip install --upgrade pip
+
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+pip install openai-whisper demucs edge-tts transformers==4.46.3 sentencepiece sacremoses deep-translator ffmpeg-python pydub
+
+python -c "import torch; print('Torch:', torch.__version__); print('CUDA:', torch.cuda.is_available()); print('GPU:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'No GPU')"
+
+ffmpeg -version
+
+python -c "import transformers; print('Transformers:', transformers.__version__)"
+
+python -m demucs --help
+
+python -c "import whisper; print('Whisper OK')"
+
+python -c "import edge_tts; print('Edge TTS OK')"
+
+pip list
