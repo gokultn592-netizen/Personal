@@ -1,0 +1,39 @@
+{
+    "movie_name": "Puss in Boots: The Last Wish",
+    "preserve_english": [
+        "puss in boots", "puss", "kitty softpaws", "kitty",
+        "death", "wolf", "big jack horner", "jack horner",
+        "goldilocks", "mama bear", "papa bear", "baby bear",
+        "three bears", "three bears crime family",
+        "perrito", "perro", "dog",
+        "mama luna", "mama",
+        "doctor", "vet", "veterinarian",
+        "map", "wishing star", "last wish", "dark forest",
+        "cave of lost souls", "sick", "anxiety", "panic attack",
+        "boots", "hat", "belt", "cape", "sword",
+        "fairy godmother", "pinocchio", "jiminy cricket",
+        "shrek", "far far away", "del mar",
+        "perrito", "cute eyes", "puppy dog eyes"
+    ],
+    "character_keywords": {
+        "puss": ["puss", "puss in boots", "legend", "fearless", "hero", "meow"],
+        "kitty": ["kitty", "kitty softpaws", "softpaws", "thief", "paws"],
+        "death": ["death", "wolf", "bounty hunter", "smell of fear", "not a cat person"],
+        "perrito": ["perrito", "perro", "dog", "stray", "therapy dog", "cute eyes"],
+        "goldilocks": ["goldilocks", "goldi", "bears", "family", "porridge"],
+        "big_jack_horner": ["jack horner", "big jack horner", "pie", "magical", "nursery rhyme"],
+        "mama_luna": ["mama luna", "mama", "old lady", "cat lady"],
+        "doctor": ["doctor", "vet", "veterinarian", "sick", "eight lives"]
+    },
+    "voice_effects": {
+        "puss": {"pitch": 0.92, "reverb": false},
+        "kitty": {"pitch": 1.05, "reverb": false},
+        "death": {"pitch": 0.75, "reverb": true},
+        "perrito": {"pitch": 1.15, "reverb": false},
+        "goldilocks": {"pitch": 1.0, "reverb": false},
+        "big_jack_horner": {"pitch": 0.88, "reverb": false},
+        "mama_luna": {"pitch": 0.85, "reverb": true},
+        "doctor": {"pitch": 1.0, "reverb": false},
+        "default": {"pitch": 1.0, "reverb": false}
+    }
+}
