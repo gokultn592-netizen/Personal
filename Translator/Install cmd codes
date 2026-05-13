@@ -26,4 +26,4 @@ pip list
 
 
 
-// For movies make a seperate folder called movie_configs
+// For movies make a seperate folder called movie_configs in json file
