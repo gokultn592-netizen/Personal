@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1026379988274",
+    "project_id": "naturedex-1758c",
+    "storage_bucket": "naturedex-1758c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1026379988274:android:4fc318b2be82979e6beb2b",
+        "android_client_info": {
+          "package_name": "com.aistudio.naturedex.wyqpkt"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1026379988274-5on14af93afvfq8dtrp90b6mta3323lk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aistudio.naturedex.wyqpkt",
+            "certificate_hash": "83391631c62e1d2f63efa8e0c32f785c13f1ae55"
+          }
+        },
+        {
+          "client_id": "1026379988274-p2mb5vg1lvg360j64jtrqld3mbboumm4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbYbq311o9cx4YrOjdQe3Z3KHhUOsqS40"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1026379988274-p2mb5vg1lvg360j64jtrqld3mbboumm4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

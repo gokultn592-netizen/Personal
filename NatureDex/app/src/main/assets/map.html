@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" href="leaflet.css" />
+    <style>
+        html, body, #map {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background: #0f1e16;
+        }
+        .leaflet-container {
+            background: #0f1e16 !important;
+        }
+        .leaflet-bar {
+            border: 1px solid #2d6a4f !important;
+            background-color: #0f1e16 !important;
+        }
+        .leaflet-bar a {
+            background-color: #0f1e16 !important;
+            color: #769382 !important;
+            border-bottom: 1px solid #2d6a4f !important;
+        }
+        .leaflet-bar a:hover {
+            background-color: #1b3527 !important;
+            color: #52b788 !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="leaflet.js"></script>
+    <script>
+        var map = L.map('map', {
+            zoomControl: false,
+            attributionControl: false
+        }).setView([13.0827, 80.2707], 13);
+
+        var tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+            maxZoom: 20
+        });
+
+        tiles.on('tileerror', function(e) {
+            console.error("Map HTML: Tile error loading " + e.url + " - message: " + (e.error ? e.error.message : 'unknown'));
+        });
+
+        tiles.addTo(map);
+
+        // Force Leaflet to recalculate the map container size after a short delay
+        // to handle WebView sizing initialization timing issues.
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 200);
+
+        var markers = {};
+        var userLocationMarker = null;
+
+        function getIconUrl(rarity) {
+            var color = "#52b788"; // Common
+            if (rarity === "Uncommon") color = "#457b9d";
+            else if (rarity === "Rare") color = "#ffb703";
+            else if (rarity === "Legendary") color = "#9d4edd";
+            
+            var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="' + color + '" width="32px" height="32px">' +
+                      '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>' +
+                      '</svg>';
+            return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+        }
+
+        function getUserIconUrl() {
+            var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#ffffff" width="28px" height="28px">' +
+                      '<circle cx="12" cy="12" r="8" fill="#52b788" stroke="#ffffff" stroke-width="2"/>' +
+                      '<circle cx="12" cy="12" r="3" fill="#ffffff"/>' +
+                      '</svg>';
+            return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+        }
+
+        function updateMarkers(decodedJson) {
+            try {
+                for (var id in markers) {
+                    map.removeLayer(markers[id]);
+                }
+                markers = {};
+
+                var creatures = JSON.parse(decodedJson);
+                creatures.forEach(function(c) {
+                    var icon = L.icon({
+                        iconUrl: getIconUrl(c.rarity),
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 32]
+                    });
+                    var m = L.marker([c.lat, c.lng], { icon: icon }).addTo(map);
+                    m.on('click', function() {
+                        if (window.AndroidBridge) {
+                            window.AndroidBridge.onMarkerClicked(c.id);
+                        }
+                    });
+                    markers[c.id] = m;
+                });
+                map.invalidateSize();
+            } catch (err) {
+                console.error("Map HTML: Error in updateMarkers:", err.message);
+            }
+        }
+
+        function updateUserLocation(lat, lng) {
+            try {
+                if (userLocationMarker) {
+                    userLocationMarker.setLatLng([lat, lng]);
+                } else {
+                    var icon = L.icon({
+                        iconUrl: getUserIconUrl(),
+                        iconSize: [28, 28],
+                        iconAnchor: [14, 14]
+                    });
+                    userLocationMarker = L.marker([lat, lng], { icon: icon }).addTo(map);
+                }
+                map.invalidateSize();
+            } catch (err) {
+                console.error("Map HTML: Error in updateUserLocation:", err.message);
+            }
+        }
+
+        function centerMap(lat, lng, zoom) {
+            try {
+                map.setView([lat, lng], zoom || 13);
+                map.invalidateSize();
+            } catch (err) {
+                console.error("Map HTML: Error in centerMap:", err.message);
+            }
+        }
+    </script>
+</body>
+</html>

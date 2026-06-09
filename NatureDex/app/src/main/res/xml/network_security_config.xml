@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">generativelanguage.googleapis.com</domain>
+        <domain includeSubdomains="true">inaturalist.org</domain>
+        <domain includeSubdomains="true">wikipedia.org</domain>
+        <domain includeSubdomains="true">unsplash.com</domain>
+        <domain includeSubdomains="true">googleusercontent.com</domain>
+        <domain includeSubdomains="true">unpkg.com</domain>
+        <domain includeSubdomains="true">openstreetmap.org</domain>
+        <domain includeSubdomains="true">cartocdn.com</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
