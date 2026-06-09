@@ -252,11 +252,17 @@ class NatureDexViewModel(application: Application) : AndroidViewModel(applicatio
         customStats: PlayerStats? = null,
         customCatchesCount: Int? = null
     ) {
+        Log.d("NatureDex", "syncPlayerStatsToFirestore: Called...")
         try {
-            val currentUser = FirebaseAuth.getInstance().currentUser ?: return
+            val currentUser = FirebaseAuth.getInstance().currentUser ?: run {
+                Log.d("NatureDex", "syncPlayerStatsToFirestore: No current user logged in. Aborting sync.")
+                return
+            }
             val db = FirebaseFirestore.getInstance()
             val stats = customStats ?: playerStats.value
             val catchesCount = customCatchesCount ?: capturedList.value.size
+
+            Log.d("NatureDex", "syncPlayerStatsToFirestore: stats - Level: ${stats.level}, catches: $catchesCount")
 
             val data = hashMapOf(
                 "name" to explorerName.value,
@@ -268,13 +274,13 @@ class NatureDexViewModel(application: Application) : AndroidViewModel(applicatio
             db.collection("leaderboards").document(currentUser.uid)
                 .set(data, SetOptions.merge())
                 .addOnSuccessListener {
-                    Log.d("NatureDex", "Leaderboard stats synced to Firestore.")
+                    Log.d("NatureDex", "Leaderboard stats synced to Firestore successfully.")
                 }
                 .addOnFailureListener { e ->
                     Log.e("NatureDex", "Leaderboard sync failed", e)
                 }
         } catch (e: Exception) {
-            Log.e("NatureDex", "Firestore sync failed: ${e.message}")
+            Log.e("NatureDex", "Firestore sync failed exception: ${e.message}")
         }
     }
 
@@ -282,11 +288,17 @@ class NatureDexViewModel(application: Application) : AndroidViewModel(applicatio
         customStats: PlayerStats? = null,
         customCatchesCount: Int? = null
     ) {
+        Log.d("NatureDex", "syncUserProfileToFirestore: Called...")
         try {
-            val currentUser = FirebaseAuth.getInstance().currentUser ?: return
+            val currentUser = FirebaseAuth.getInstance().currentUser ?: run {
+                Log.d("NatureDex", "syncUserProfileToFirestore: No current user logged in. Aborting sync.")
+                return
+            }
             val db = FirebaseFirestore.getInstance()
             val stats = customStats ?: playerStats.value
             val catchesCount = customCatchesCount ?: capturedList.value.size
+
+            Log.d("NatureDex", "syncUserProfileToFirestore: stats - Level: ${stats.level}, Exp: ${stats.experience}, catches: $catchesCount")
 
             val profileData = hashMapOf(
                 "uid" to currentUser.uid,
@@ -303,13 +315,13 @@ class NatureDexViewModel(application: Application) : AndroidViewModel(applicatio
             db.collection("users").document(currentUser.uid)
                 .set(profileData, SetOptions.merge())
                 .addOnSuccessListener {
-                    Log.d("NatureDex", "User profile synced to Firestore.")
+                    Log.d("NatureDex", "User profile synced to Firestore successfully.")
                 }
                 .addOnFailureListener { e ->
                     Log.e("NatureDex", "User profile sync failed", e)
                 }
         } catch (e: Exception) {
-            Log.e("NatureDex", "Profile sync failed: ${e.message}")
+            Log.e("NatureDex", "Profile sync failed exception: ${e.message}")
         }
     }
 
@@ -455,8 +467,12 @@ class NatureDexViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun restoreAllUserDataFromFirestore() {
+        Log.d("NatureDex", "restoreAllUserDataFromFirestore: Starting data restoration/sync...")
         try {
-            val currentUser = FirebaseAuth.getInstance().currentUser ?: return
+            val currentUser = FirebaseAuth.getInstance().currentUser ?: run {
+                Log.d("NatureDex", "restoreAllUserDataFromFirestore: No current user logged in. Aborting.")
+                return
+            }
             val db = FirebaseFirestore.getInstance()
 
             // 1. Sync User Profile & Player Stats
@@ -469,31 +485,46 @@ class NatureDexViewModel(application: Application) : AndroidViewModel(applicatio
                         val name = doc.getString("displayName")
                         val role = doc.getString("role") ?: "catcher"
 
+                        Log.d("NatureDex", "restoreAllUserDataFromFirestore: Fetched from Firestore - Level: $firestoreLevel, Exp: $firestoreExperience, name: $name, role: $role")
+
                         _userRole.value = role
                         prefs.edit().putString("user_role", role).apply()
                         
-                        // Always load stats from Firestore and overwrite local/device stats
                         if (name != null && name != "Explorer") {
                             _explorerName.value = name
                             prefs.edit().putString("explorer_name", name).apply()
                         }
                         viewModelScope.launch(Dispatchers.IO) {
-                            repository.insertPlayerStats(
-                                PlayerStats(id = 1, level = firestoreLevel, experience = firestoreExperience)
-                            )
+                            val localStats = repository.playerStats.first() ?: PlayerStats()
+                            Log.d("NatureDex", "restoreAllUserDataFromFirestore: Local Stats - Level: ${localStats.level}, Exp: ${localStats.experience}")
+                            if (localStats.level > firestoreLevel || 
+                                (localStats.level == firestoreLevel && localStats.experience > firestoreExperience)) {
+                                Log.d("NatureDex", "restoreAllUserDataFromFirestore: Local stats are higher. Syncing local stats TO Firestore.")
+                                val catchesCount = repository.getCapturedListOnce().size
+                                syncUserProfileToFirestore(localStats, catchesCount)
+                                syncPlayerStatsToFirestore(localStats, catchesCount)
+                            } else {
+                                Log.d("NatureDex", "restoreAllUserDataFromFirestore: Firestore stats are newer or equal. Overwriting local stats with Firestore values.")
+                                repository.insertPlayerStats(
+                                    PlayerStats(id = 1, level = firestoreLevel, experience = firestoreExperience)
+                                )
+                            }
                         }
-                        Log.d("NatureDex", "Local stats always updated from Firestore: Level $firestoreLevel, Exp $firestoreExperience")
                     } else {
                         // First time logging in: upload local stats to Firestore
+                        Log.d("NatureDex", "restoreAllUserDataFromFirestore: User doc does not exist in Firestore. Syncing local stats as initial.")
                         _userRole.value = "catcher"
                         prefs.edit().putString("user_role", "catcher").apply()
-                        val localStats = playerStats.value
-                        syncUserProfileToFirestore(localStats, capturedList.value.size)
-                        syncPlayerStatsToFirestore(localStats, capturedList.value.size)
+                        viewModelScope.launch(Dispatchers.IO) {
+                            val localStats = repository.playerStats.first() ?: PlayerStats()
+                            val catchesCount = repository.getCapturedListOnce().size
+                            syncUserProfileToFirestore(localStats, catchesCount)
+                            syncPlayerStatsToFirestore(localStats, catchesCount)
+                        }
                     }
                 }
                 .addOnFailureListener { e ->
-                    Log.e("NatureDex", "Failed to get user profile from Firestore", e)
+                    Log.e("NatureDex", "restoreAllUserDataFromFirestore: Failed to get user profile from Firestore", e)
                 }
 
             // 2. Sync Captured Creatures (Two-way sync)
@@ -1368,23 +1399,27 @@ class NatureDexViewModel(application: Application) : AndroidViewModel(applicatio
     fun incrementExperience(amount: Int) {
         viewModelScope.launch {
             val stats = playerStats.value
+            val catchesCount = repository.getCapturedListOnce().size
             var currentXP = stats.experience + amount
             var currentLvl = stats.level
+
+            Log.d("NatureDex", "incrementExperience: Gained $amount XP. Current stats - Lvl: ${stats.level}, Exp: ${stats.experience}, Catches: ${stats.totalCatches} (DB: $catchesCount)")
 
             while (currentXP >= 1000) {
                 currentXP -= 1000
                 currentLvl += 1
+                Log.d("NatureDex", "incrementExperience: Level Up! New Level: $currentLvl")
             }
 
             val nextStats = PlayerStats(
                 id = 1,
                 level = currentLvl,
                 experience = currentXP,
-                totalCatches = stats.totalCatches + 1
+                totalCatches = catchesCount
             )
             repository.insertPlayerStats(nextStats)
+            Log.d("NatureDex", "incrementExperience: Local PlayerStats updated: Lvl: ${nextStats.level}, Exp: ${nextStats.experience}, TotalCatches: ${nextStats.totalCatches}")
             
-            val catchesCount = repository.getCapturedListOnce().size
             syncPlayerStatsToFirestore(nextStats, catchesCount)
             syncUserProfileToFirestore(nextStats, catchesCount)
 
