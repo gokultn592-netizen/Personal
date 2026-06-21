@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if request is from an admin
+    function isAdmin() {
+      return request.auth != null && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    // Products: Anyone signed in can read, only admins can write
+    match /products/{productId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Orders: Any signed-in user can create (place an order),
+    // only admins can read or update
+    match /orders/{orderId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Settings: Any signed-in user can read (to get WhatsApp number),
+    // only admins can write
+    match /settings/{settingId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Admins list: A user can only read their OWN admin record (to check their role).
+    // Nobody can write from the client — only from Firebase Console.
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Users: Each signed-in user can read and write ONLY their own profile document.
+    // However, they cannot modify their own role (privilege escalation protection).
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid &&
+        (
+          // Case 1: Updating an existing document. The role field must not be changed.
+          (resource != null && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role))
+          ||
+          // Case 2: Creating a new document. The role field must be 'buyer' or not specified.
+          (resource == null && (!('role' in request.resource.data) || request.resource.data.role == 'buyer'))
+        );
+    }
+  }
+}

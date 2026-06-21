@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boutique Admin — Product Editor</title>
+  <meta name="description" content="Add a new catalog product or edit details, adjust pricing, stock quantities, and upload public B2 images.">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Injected by main.js -->
+  <header></header>
+
+  <main class="section">
+    <div class="container">
+      <div style="max-width: 700px; margin: 0 auto;">
+        
+        <div style="margin-bottom: var(--spacing-md); display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <p class="section-subtitle">Catalog Admin</p>
+            <h1 class="section-title" id="form-page-title">Add New Product</h1>
+          </div>
+          <a href="dashboard.html" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem;">
+            Cancel
+          </a>
+        </div>
+
+        <form id="product-editor-form" class="checkout-card" style="box-shadow: var(--shadow-md);">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-sm);">
+            <!-- Name -->
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label for="prod-name">Product Name *</label>
+              <input type="text" id="prod-name" class="form-input" placeholder="e.g. Linen Gold Trim Kimono" required>
+            </div>
+
+            <!-- Category -->
+            <div class="form-group">
+              <label for="prod-category">Category *</label>
+              <input type="text" id="prod-category" class="form-input" placeholder="e.g. Lounge" required>
+            </div>
+
+            <!-- Featured Checkbox -->
+            <div class="form-group" style="display: flex; flex-direction: row; align-items: center; gap: 0.5rem; height: 100%; margin-top: 1.5rem;">
+              <input type="checkbox" id="prod-featured" style="width: 18px; height: 18px; cursor: pointer;">
+              <label for="prod-featured" style="cursor: pointer; margin: 0;">Feature on Homepage</label>
+            </div>
+
+            <!-- Price -->
+            <div class="form-group">
+              <label for="prod-price">Retail Price ($) *</label>
+              <input type="number" id="prod-price" class="form-input" step="0.01" min="0" placeholder="180.00" required>
+            </div>
+
+            <!-- Stock -->
+            <div class="form-group">
+              <label for="prod-stock">Stock Units *</label>
+              <input type="number" id="prod-stock" class="form-input" min="0" placeholder="5" required>
+            </div>
+
+            <!-- Sizes -->
+            <div class="form-group">
+              <label for="prod-sizes">Sizes (comma-separated)</label>
+              <input type="text" id="prod-sizes" class="form-input" placeholder="e.g. S, M, L">
+            </div>
+
+            <!-- Colors -->
+            <div class="form-group">
+              <label for="prod-colors">Colors (comma-separated)</label>
+              <input type="text" id="prod-colors" class="form-input" placeholder="e.g. Ivory, Sandy Beige">
+            </div>
+
+            <!-- Description -->
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label for="prod-desc">Product Description</label>
+              <textarea id="prod-desc" class="form-input" rows="4" placeholder="Describe materials, fit, care instructions..." style="resize: vertical; font-family: inherit;"></textarea>
+            </div>
+
+            <!-- Image Uploader -->
+            <div class="form-group" style="grid-column: 1 / -1; margin-top: 0.5rem;">
+              <label>Product Cover Image *</label>
+              <div class="file-upload-wrapper" id="upload-wrapper">
+                <i class="fas fa-cloud-arrow-up" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 0.5rem;"></i>
+                <p style="font-size: 0.9rem;">Click or drag file to upload</p>
+                <span class="text-muted" style="font-size: 0.75rem;">JPG, PNG up to 4MB. Uploaded securely to Backblaze B2.</span>
+                <input type="file" id="prod-image-file" accept="image/*">
+              </div>
+
+              <!-- Uploading progress -->
+              <div class="progress-bar-container" id="upload-progress-container">
+                <div class="progress-bar" id="upload-progress-bar"></div>
+              </div>
+              <span id="upload-status" class="text-muted" style="font-size: 0.8rem; margin-top: 0.2rem; display: none;">Uploading...</span>
+
+              <!-- Image URL Holder (hidden / manual bypass) -->
+              <input type="hidden" id="prod-image-url">
+              
+              <!-- Image Preview -->
+              <img id="image-upload-preview" class="upload-preview" src="#" alt="Upload preview">
+            </div>
+          </div>
+
+          <div style="margin-top: var(--spacing-md); display: flex; gap: var(--spacing-sm); justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: var(--spacing-sm);">
+            <a href="dashboard.html" class="btn btn-secondary">Discard</a>
+            <button type="submit" id="save-product-btn" class="btn btn-primary">Save Product</button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Injected by main.js -->
+  <footer></footer>
+
+  <!-- Scripts -->
+  <script type="module" src="../js/main.js"></script>
+  <script type="module">
+    import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { db, isConfigured } from "../js/firebase-config.js";
+    import { requireAdmin } from "../js/auth.js";
+    import { mockProducts } from "../js/products.js";
+
+    let editProductId = null;
+    let existingImageUrl = "";
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      // 1. Enforce admin-only access
+      const session = await requireAdmin();
+      if (!session) return;
+
+      // 2. Determine Edit vs Add Mode
+      const params = new URLSearchParams(window.location.search);
+      editProductId = params.get("id");
+
+      if (editProductId) {
+        document.getElementById("form-page-title").textContent = "Edit Product";
+        document.title = "Edit Product — VibeBoutique Admin";
+        await loadProductData(editProductId);
+      } else {
+        document.getElementById("form-page-title").textContent = "Add New Product";
+        document.title = "Add Product — VibeBoutique Admin";
+      }
+
+      // 3. Bind file uploader
+      const fileInput = document.getElementById("prod-image-file");
+      if (fileInput) {
+        fileInput.addEventListener("change", handleImageUpload);
+      }
+
+      // 4. Bind Form Submission
+      const form = document.getElementById("product-editor-form");
+      if (form) {
+        form.addEventListener("submit", handleFormSave);
+      }
+    });
+
+    async function loadProductData(id) {
+      let product = null;
+
+      if (isConfigured) {
+        try {
+          const snap = await getDoc(doc(db, "products", id));
+          if (snap.exists()) {
+            product = snap.data();
+          }
+        } catch (e) {
+          console.error("Failed to load edit product from Firestore:", e);
+        }
+      }
+
+      // Fallback check
+      if (!product) {
+        const savedMocks = JSON.parse(localStorage.getItem("boutique_mock_products") || "[]");
+        product = savedMocks.find(p => p.id === id) || mockProducts.find(p => p.id === id);
+      }
+
+      if (!product) {
+        alert("Product not found. Returning to dashboard.");
+        window.location.href = "dashboard.html";
+        return;
+      }
+
+      // Fill form values
+      document.getElementById("prod-name").value = product.name || "";
+      document.getElementById("prod-category").value = product.category || "";
+      document.getElementById("prod-featured").checked = !!product.featured;
+      document.getElementById("prod-price").value = product.price || "";
+      document.getElementById("prod-stock").value = product.stock || "";
+      document.getElementById("prod-sizes").value = (product.sizes || []).join(", ");
+      document.getElementById("prod-colors").value = (product.colors || []).join(", ");
+      document.getElementById("prod-desc").value = product.description || "";
+      
+      if (product.imageUrl) {
+        existingImageUrl = product.imageUrl;
+        document.getElementById("prod-image-url").value = product.imageUrl;
+        
+        const preview = document.getElementById("image-upload-preview");
+        if (preview) {
+          preview.src = product.imageUrl;
+          preview.style.display = "block";
+        }
+      }
+    }
+
+    async function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Local front-end validation
+      if (file.size > 4 * 1024 * 1024) {
+        alert("File size exceeds 4MB. Please upload a smaller image.");
+        e.target.value = "";
+        return;
+      }
+
+      const wrapper = document.getElementById("upload-wrapper");
+      const progressContainer = document.getElementById("upload-progress-container");
+      const progressBar = document.getElementById("upload-progress-bar");
+      const statusText = document.getElementById("upload-status");
+      const preview = document.getElementById("image-upload-preview");
+
+      // Set loading state
+      if (progressContainer) progressContainer.style.display = "block";
+      if (statusText) {
+        statusText.textContent = "Encoding and uploading image...";
+        statusText.style.display = "block";
+      }
+      if (progressBar) progressBar.style.width = "10%";
+
+      // 1. Convert file to Base64
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64String = reader.result.split(",")[1];
+        if (progressBar) progressBar.style.width = "40%";
+
+        // 2. Resolve Vercel Endpoint Target (Local vs Prod)
+        let apiHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+          ? "http://localhost:3000"
+          : "";
+        const uploadUrl = `${apiHost}/api/upload-image`;
+
+        try {
+          if (progressBar) progressBar.style.width = "60%";
+          
+          const response = await fetch(uploadUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              fileName: file.name,
+              fileType: file.type,
+              fileBase64: base64String
+            })
+          });
+
+          if (progressBar) progressBar.style.width = "90%";
+
+          const result = await response.json();
+
+          if (response.ok && result.success) {
+            if (progressBar) progressBar.style.width = "100%";
+            if (statusText) statusText.textContent = result.isMock ? "Uploaded (Development Mock Photo) ✓" : "Uploaded successfully ✓";
+            
+            // Set input value
+            document.getElementById("prod-image-url").value = result.imageUrl;
+            
+            // Show preview
+            if (preview) {
+              preview.src = result.imageUrl;
+              preview.style.display = "block";
+            }
+          } else {
+            throw new Error(result.error || "Upload response error");
+          }
+        } catch (err) {
+          console.error("Vercel upload request failed:", err);
+          
+          // Trigger automatic local mockup placeholder fallback
+          const mockPhotos = [
+            "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1539185441755-769473a23570?w=600&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&auto=format&fit=crop"
+          ];
+          const randomMock = mockPhotos[Math.floor(Math.random() * mockPhotos.length)];
+          
+          if (progressBar) progressBar.style.width = "100%";
+          if (statusText) statusText.textContent = "Upload server offline. Used fallback placeholder ✓";
+          
+          document.getElementById("prod-image-url").value = randomMock;
+          if (preview) {
+            preview.src = randomMock;
+            preview.style.display = "block";
+          }
+        } finally {
+          setTimeout(() => {
+            if (progressContainer) progressContainer.style.display = "none";
+            if (statusText) statusText.style.display = "none";
+          }, 3000);
+        }
+      };
+      
+      reader.readAsDataURL(file);
+    }
+
+    async function handleFormSave(e) {
+      e.preventDefault();
+
+      const saveBtn = document.getElementById("save-product-btn");
+      if (saveBtn) {
+        saveBtn.textContent = "Saving...";
+        saveBtn.disabled = true;
+      }
+
+      // Collect data
+      const name = document.getElementById("prod-name").value.trim();
+      const category = document.getElementById("prod-category").value.trim();
+      const featured = document.getElementById("prod-featured").checked;
+      const price = parseFloat(document.getElementById("prod-price").value);
+      const stock = parseInt(document.getElementById("prod-stock").value);
+      const description = document.getElementById("prod-desc").value.trim();
+      const imageUrl = document.getElementById("prod-image-url").value.trim();
+      
+      // Parse arrays
+      const sizes = document.getElementById("prod-sizes").value
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean);
+      const colors = document.getElementById("prod-colors").value
+        .split(",")
+        .map(c => c.trim())
+        .filter(Boolean);
+
+      if (!imageUrl) {
+        alert("Please upload a product cover image first.");
+        if (saveBtn) {
+          saveBtn.textContent = "Save Product";
+          saveBtn.disabled = false;
+        }
+        return;
+      }
+
+      const productPayload = {
+        name,
+        category,
+        featured,
+        price,
+        stock,
+        sizes,
+        colors,
+        description,
+        imageUrl,
+        updatedAt: isConfigured ? serverTimestamp() : new Date()
+      };
+
+      if (isConfigured) {
+        try {
+          if (editProductId) {
+            // Update mode
+            await setDoc(doc(db, "products", editProductId), productPayload, { merge: true });
+          } else {
+            // Create mode
+            productPayload.createdAt = serverTimestamp();
+            await addDoc(collection(db, "products"), productPayload);
+          }
+          window.location.href = "dashboard.html";
+          return;
+        } catch (error) {
+          console.error("Firestore product save error:", error);
+          alert("Failed to write to database: " + error.message);
+        }
+      }
+
+      // Mock Save Mode
+      let savedMocks = JSON.parse(localStorage.getItem("boutique_mock_products") || "null");
+      if (!savedMocks) {
+        savedMocks = [...mockProducts];
+      }
+
+      if (editProductId) {
+        const index = savedMocks.findIndex(p => p.id === editProductId);
+        if (index > -1) {
+          savedMocks[index] = { ...savedMocks[index], ...productPayload };
+        }
+      } else {
+        const newProduct = {
+          id: "MOCK-" + Math.random().toString(36).substr(2, 9).toUpperCase(),
+          ...productPayload,
+          createdAt: { seconds: Date.now() / 1000 }
+        };
+        savedMocks.push(newProduct);
+      }
+
+      localStorage.setItem("boutique_mock_products", JSON.stringify(savedMocks));
+      window.location.href = "dashboard.html";
+    }
+  </script>
+</body>
+</html>

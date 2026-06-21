@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VibeBoutique — Checkout</title>
+  <meta name="description" content="Finalize your selection and confirm your delivery details. Submit details directly via WhatsApp.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Injected by main.js -->
+  <header></header>
+
+  <main class="section">
+    <div class="container">
+      
+      <!-- Normal Checkout View -->
+      <div id="checkout-form-view">
+        <div style="margin-bottom: var(--spacing-md);">
+          <p class="section-subtitle">Information</p>
+          <h1 class="section-title">Checkout</h1>
+        </div>
+
+        <div class="checkout-layout">
+          <!-- Checkout Form -->
+          <div class="checkout-card">
+            <h2 style="font-size: 1.5rem; margin-bottom: var(--spacing-sm); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+              Delivery Details
+            </h2>
+            <form id="checkout-form">
+              <div class="form-group">
+                <label for="cust-name">Full Name *</label>
+                <input type="text" id="cust-name" class="form-input" placeholder="e.g. Jane Doe" required>
+              </div>
+              <div class="form-group">
+                <label for="cust-phone">WhatsApp Mobile Number *</label>
+                <input type="tel" id="cust-phone" class="form-input" placeholder="e.g. +1 234 567 8900" required>
+              </div>
+              <div class="form-group">
+                <label for="cust-address">Delivery Address *</label>
+                <textarea id="cust-address" class="form-input" rows="4" placeholder="Street, Apt, City, Zip Code" required style="resize: vertical; font-family: inherit;"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="cust-notes">Order Notes (Optional)</label>
+                <textarea id="cust-notes" class="form-input" rows="2" placeholder="Gate codes, delivery preferences..." style="resize: vertical; font-family: inherit;"></textarea>
+              </div>
+              
+              <button type="submit" id="submit-order-btn" class="btn btn-primary" style="width: 100%; margin-top: var(--spacing-sm);">
+                Place Order & Confirm
+              </button>
+            </form>
+          </div>
+
+          <!-- Summary list -->
+          <div class="checkout-order-summary">
+            <h3 style="font-size: 1.25rem; margin-bottom: var(--spacing-sm); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+              Your Items
+            </h3>
+            <div id="checkout-items-list" style="margin-bottom: var(--spacing-sm);">
+              <!-- Injected by JS -->
+            </div>
+            
+            <div style="margin-top: var(--spacing-md); display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: var(--spacing-sm);">
+              <div class="summary-row">
+                <span class="text-muted">Subtotal</span>
+                <span id="checkout-subtotal">$0.00</span>
+              </div>
+              <div class="summary-row" style="font-weight: 600; font-size: 1.15rem; margin-top: 0.3rem;">
+                <span>Total Due</span>
+                <span id="checkout-total">$0.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Success Confirmation View (Hidden by default) -->
+      <div id="checkout-success-view" style="display: none; max-width: 600px; margin: 0 auto; text-align: center; padding: var(--spacing-xl) 0;">
+        <i class="fas fa-circle-check" style="font-size: 5rem; color: var(--accent-green); margin-bottom: var(--spacing-md);"></i>
+        <h1 class="section-title" style="margin-bottom: var(--spacing-xs);">Order Placed!</h1>
+        <p class="text-muted" style="font-size: 1.1rem; margin-bottom: var(--spacing-md);">
+          Your order has been recorded with ID: <strong id="success-order-id" style="color: var(--text-primary);">#XXXXX</strong>.
+        </p>
+        
+        <div class="admin-card" style="background-color: var(--bg-secondary); border-color: var(--accent-gold-light); text-align: left; margin-bottom: var(--spacing-lg);">
+          <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">WhatsApp Confirmation Required</h3>
+          <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 1rem;">
+            To complete payments and schedule delivery, click the button below to send your order summary to the boutique owner on WhatsApp.
+          </p>
+          <a id="whatsapp-confirm-btn" href="#" target="_blank" class="btn btn-green" style="width: 100%; display: flex; gap: 0.5rem;">
+            <i class="fab fa-whatsapp" style="font-size: 1.1rem;"></i> Confirm on WhatsApp
+          </a>
+        </div>
+
+        <p style="font-size: 0.9rem;">
+          <a href="shop.html" style="text-decoration: underline; color: var(--text-primary); font-weight: 500;">Back to Shop Catalog</a>
+        </p>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Injected by main.js -->
+  <footer></footer>
+
+  <!-- Scripts -->
+  <script type="module" src="js/main.js"></script>
+  <script type="module">
+    import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { db, isConfigured } from "./js/firebase-config.js";
+    import { appSettings } from "./js/main.js";
+    import { updateCartBadge } from "./js/main.js";
+
+    let cart = [];
+    let subtotal = 0;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1. Read Cart data
+      try {
+        cart = JSON.parse(localStorage.getItem("boutique_cart") || "[]");
+      } catch (e) {
+        console.error("Error loading cart details:", e);
+        cart = [];
+      }
+
+      if (cart.length === 0) {
+        window.location.href = "cart.html";
+        return;
+      }
+
+      // 2. Render summary view list
+      renderCheckoutSummary();
+
+      // 3. Bind form submission
+      const form = document.getElementById("checkout-form");
+      if (form) {
+        form.addEventListener("submit", handleCheckoutSubmit);
+      }
+    });
+
+    function renderCheckoutSummary() {
+      const listContainer = document.getElementById("checkout-items-list");
+      const subtotalEl = document.getElementById("checkout-subtotal");
+      const totalEl = document.getElementById("checkout-total");
+      
+      if (!listContainer) return;
+
+      let listHtml = "";
+      subtotal = 0;
+
+      cart.forEach(item => {
+        const itemTotal = item.price * item.qty;
+        subtotal += itemTotal;
+        const variantDesc = [item.variant?.size, item.variant?.color].filter(Boolean).join(" / ");
+        
+        listHtml += `
+          <div class="summary-item-line">
+            <div>
+              <strong>${item.name}</strong> ${variantDesc ? `<span class="text-muted" style="font-size:0.8rem;">(${variantDesc})</span>` : ''}
+              <div class="text-muted" style="font-size: 0.8rem;">Qty: ${item.qty}</div>
+            </div>
+            <span style="font-weight: 500;">$${itemTotal.toFixed(2)}</span>
+          </div>
+        `;
+      });
+
+      listContainer.innerHTML = listHtml;
+      subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+      totalEl.textContent = `$${subtotal.toFixed(2)}`;
+    }
+
+    async function handleCheckoutSubmit(e) {
+      e.preventDefault();
+
+      const submitBtn = document.getElementById("submit-order-btn");
+      if (submitBtn) {
+        submitBtn.textContent = "Processing Order...";
+        submitBtn.disabled = true;
+      }
+
+      // Collect customer details
+      const customerName = document.getElementById("cust-name").value.trim();
+      const phone = document.getElementById("cust-phone").value.trim();
+      const address = document.getElementById("cust-address").value.trim();
+      const notes = document.getElementById("cust-notes").value.trim();
+
+      const orderData = {
+        customerName,
+        phone,
+        address,
+        notes: notes || "",
+        items: cart.map(item => ({
+          productId: item.productId,
+          name: item.name,
+          price: item.price,
+          qty: item.qty,
+          variant: item.variant || {}
+        })),
+        total: subtotal,
+        status: "pending",
+        createdAt: isConfigured ? serverTimestamp() : new Date()
+      };
+
+      let orderId = "MOCK-" + Math.random().toString(36).substr(2, 9).toUpperCase();
+
+      // 1. Submit to Firestore if configured
+      if (isConfigured) {
+        try {
+          const docRef = await addDoc(collection(db, "orders"), orderData);
+          orderId = docRef.id;
+        } catch (error) {
+          console.error("Firestore order write failed, continuing with mock ID: ", error);
+          alert("We encountered an error saving your order to the database. You can still confirm via WhatsApp!");
+        }
+      }
+
+      // 2. Build WhatsApp redirect link message
+      let message = `*New Order from VibeBoutique!*\n`;
+      message += `Order ID: \`${orderId}\`\n\n`;
+      message += `*Items:*\n`;
+      
+      cart.forEach(item => {
+        const variantDesc = [item.variant?.size, item.variant?.color].filter(Boolean).join(" / ");
+        message += `- ${item.qty}x ${item.name} ${variantDesc ? `(${variantDesc})` : ''} - $${(item.price * item.qty).toFixed(2)}\n`;
+      });
+      
+      message += `\n*Total:* $${subtotal.toFixed(2)}\n\n`;
+      message += `*Delivery Info:*\n`;
+      message += `- Name: ${customerName}\n`;
+      message += `- Phone: ${phone}\n`;
+      message += `- Address: ${address}\n`;
+      if (notes) {
+        message += `- Notes: ${notes}\n`;
+      }
+      message += `\nThank you! Please reply to confirm delivery details.`;
+
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://wa.me/${appSettings.whatsappNumber}?text=${encodedMessage}`;
+
+      // 3. Clear cart from localStorage
+      localStorage.removeItem("boutique_cart");
+      updateCartBadge();
+
+      // 4. Update elements and swap displays
+      document.getElementById("success-order-id").textContent = `#${orderId}`;
+      const waBtn = document.getElementById("whatsapp-confirm-btn");
+      if (waBtn) waBtn.href = whatsappUrl;
+
+      document.getElementById("checkout-form-view").style.display = "none";
+      document.getElementById("checkout-success-view").style.display = "block";
+      
+      // Smooth scroll to top of page
+      window.scrollTo(0, 0);
+    }
+  </script>
+</body>
+</html>

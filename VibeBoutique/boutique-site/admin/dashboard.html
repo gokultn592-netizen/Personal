@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boutique Admin — Dashboard</title>
+  <meta name="description" content="Manage orders, review catalog listings, edit products, and customize WhatsApp contact details.">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Injected by main.js -->
+  <header></header>
+
+  <main class="section">
+    <div class="container">
+      
+      <!-- Admin Header Row -->
+      <div class="admin-header-row" style="margin-bottom: var(--spacing-md);">
+        <div>
+          <p class="section-subtitle">Admin Operations</p>
+          <h1 class="section-title">Dashboard</h1>
+        </div>
+        <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
+          <span class="text-muted" id="admin-user-email" style="font-size: 0.9rem;">Logged in: admin@admin.com</span>
+          <button id="admin-logout-btn" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem;">
+            Logout
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation tabs -->
+      <div style="margin-bottom: var(--spacing-md);">
+        <div class="admin-tabs">
+          <button class="admin-tab-btn active" data-tab="orders">Orders (<span id="orders-count">0</span>)</button>
+          <button class="admin-tab-btn" data-tab="products">Products (<span id="products-count">0</span>)</button>
+          <button class="admin-tab-btn" data-tab="settings">Store Settings</button>
+        </div>
+      </div>
+
+      <!-- Tab View: Orders -->
+      <div id="tab-orders" class="admin-tab-content">
+        <div class="admin-card">
+          <h2 class="admin-card-title">Manage Customer Orders</h2>
+          <div style="overflow-x: auto;">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Date</th>
+                  <th>Customer Info</th>
+                  <th>Items Details</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="orders-table-body">
+                <!-- Injected by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab View: Products -->
+      <div id="tab-products" class="admin-tab-content" style="display: none;">
+        <div class="admin-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+            <h2 style="font-family: var(--font-heading); font-size: 1.5rem;">Product Catalog</h2>
+            <a href="product-form.html" class="btn btn-primary" style="padding: 0.5rem 1.2rem; font-size: 0.8rem;">
+              <i class="fas fa-plus"></i> Add Product
+            </a>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Thumbnail</th>
+                  <th>Product Name</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>Featured</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="products-table-body">
+                <!-- Injected by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab View: Settings -->
+      <div id="tab-settings" class="admin-tab-content" style="display: none;">
+        <div class="admin-card" style="max-width: 600px;">
+          <h2 class="admin-card-title">Boutique Configuration</h2>
+          <form id="store-settings-form">
+            <div id="settings-success-alert" style="display: none; background-color: #DEF7EC; border: 1px solid #BCF0DA; color: #03543F; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; margin-bottom: var(--spacing-sm);">
+              Settings saved successfully!
+            </div>
+            
+            <div class="form-group">
+              <label for="settings-shop-name">Store Name (Read-Only)</label>
+              <input type="text" id="settings-shop-name" class="form-input" placeholder="e.g. VibeBoutique" readonly style="background-color: var(--bg-secondary); cursor: not-allowed; border-color: var(--border-color); color: var(--text-muted);">
+            </div>
+            
+            <div class="form-group">
+              <label for="settings-wa-number">WhatsApp Contact Number *</label>
+              <input type="tel" id="settings-wa-number" class="form-input" placeholder="Include country code, e.g. 12345678900" required>
+              <span class="text-muted" style="font-size: 0.75rem;">Orders will redirect customers to message this phone number. Do not include spaces, hyphens, or '+' signs.</span>
+            </div>
+
+            <div class="form-group" style="margin-top: var(--spacing-sm);">
+              <label for="settings-instagram-id">Instagram Username *</label>
+              <input type="text" id="settings-instagram-id" class="form-input" placeholder="e.g. vibeboutique" required>
+              <span class="text-muted" style="font-size: 0.75rem;">Enter your Instagram account username (without the '@' sign). Customers will be redirected to your page.</span>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">
+              Save Settings
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Injected by main.js -->
+  <footer></footer>
+
+  <!-- Scripts -->
+  <script type="module" src="../js/main.js"></script>
+  <script type="module">
+    import { collection, getDocs, doc, getDoc, setDoc, deleteDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { db, isConfigured } from "../js/firebase-config.js";
+    import { requireAdmin, signOutUser } from "../js/auth.js";
+    import { mockProducts } from "../js/products.js";
+
+    // Data lists
+    let ordersList = [];
+    let productsList = [];
+
+    // Default mock settings
+    const defaultSettings = {
+      shopName: "VibeBoutique",
+      whatsappNumber: "1234567890",
+      instagramId: "vibeboutique"
+    };
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      // 1. Enforce admin-only access (redirects buyers/guests to home)
+      const session = await requireAdmin();
+      if (!session) return; // redirected
+
+      const { user } = session;
+      const emailEl = document.getElementById("admin-user-email");
+      if (emailEl && user) {
+        emailEl.textContent = `Signed in as: ${user.displayName || user.email}`;
+      }
+
+      // 2. Setup Tab-switching
+      setupDashboardTabs();
+
+      // 3. Load dynamic dashboard datasets
+      await loadDashboardData();
+
+      // 4. Bind settings form saving
+      const settingsForm = document.getElementById("store-settings-form");
+      if (settingsForm) {
+        settingsForm.addEventListener("submit", handleSettingsSave);
+      }
+
+      // 5. Logout action
+      const logoutBtn = document.getElementById("admin-logout-btn");
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", async () => {
+          if (confirm("Are you sure you want to sign out?")) {
+            await signOutUser();
+          }
+        });
+      }
+    });
+
+    function setupDashboardTabs() {
+      const tabButtons = document.querySelectorAll(".admin-tab-btn");
+      tabButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          tabButtons.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+
+          const targetTab = btn.getAttribute("data-tab");
+          document.querySelectorAll(".admin-tab-content").forEach(content => {
+            content.style.display = "none";
+          });
+          document.getElementById(`tab-${targetTab}`).style.display = "block";
+        });
+      });
+    }
+
+    async function loadDashboardData() {
+      // Fetch settings
+      await loadStoreSettings();
+
+      // Fetch products and orders
+      if (isConfigured) {
+        await loadRealFirebaseData();
+      } else {
+        await loadMockStorageData();
+      }
+
+      // Render tab tables
+      renderOrdersTable();
+      renderProductsTable();
+    }
+
+    async function loadStoreSettings() {
+      const shopNameInput = document.getElementById("settings-shop-name");
+      const waNumberInput = document.getElementById("settings-wa-number");
+      const igIdInput = document.getElementById("settings-instagram-id");
+
+      if (isConfigured) {
+        try {
+          const snap = await getDoc(doc(db, "settings", "general"));
+          if (snap.exists()) {
+            const data = snap.data();
+            if (shopNameInput) shopNameInput.value = data.shopName || defaultSettings.shopName;
+            if (waNumberInput) waNumberInput.value = data.whatsappNumber || defaultSettings.whatsappNumber;
+            if (igIdInput) igIdInput.value = data.instagramId || defaultSettings.instagramId;
+            return;
+          }
+        } catch (e) {
+          console.error("Firestore settings load failed:", e);
+        }
+      }
+
+      // LocalStorage settings backup for mockup mode
+      const savedSettings = JSON.parse(localStorage.getItem("boutique_mock_settings") || "null");
+      const activeSettings = savedSettings || defaultSettings;
+      if (shopNameInput) shopNameInput.value = activeSettings.shopName;
+      if (waNumberInput) waNumberInput.value = activeSettings.whatsappNumber;
+      if (igIdInput) igIdInput.value = activeSettings.instagramId || defaultSettings.instagramId;
+    }
+
+    async function handleSettingsSave(e) {
+      e.preventDefault();
+      const shopName = document.getElementById("settings-shop-name").value.trim();
+      const whatsappNumber = document.getElementById("settings-wa-number").value.trim().replace(/[\s\-\+\(\)]/g, "");
+      const instagramId = document.getElementById("settings-instagram-id").value.trim().replace(/@/g, "");
+
+      const alertBanner = document.getElementById("settings-success-alert");
+
+      if (isConfigured) {
+        try {
+          await setDoc(doc(db, "settings", "general"), { shopName, whatsappNumber, instagramId });
+          if (alertBanner) {
+            alertBanner.style.display = "block";
+            setTimeout(() => alertBanner.style.display = "none", 3000);
+          }
+          return;
+        } catch (error) {
+          console.error("Failed to save Firestore settings: ", error);
+          alert("Error saving settings to Database: " + error.message);
+        }
+      }
+
+      // Mock setting save
+      localStorage.setItem("boutique_mock_settings", JSON.stringify({ shopName, whatsappNumber, instagramId }));
+      if (alertBanner) {
+        alertBanner.style.display = "block";
+        setTimeout(() => alertBanner.style.display = "none", 3000);
+      }
+    }
+
+    async function loadRealFirebaseData() {
+      try {
+        // Fetch products
+        const prodSnap = await getDocs(query(collection(db, "products")));
+        productsList = [];
+        prodSnap.forEach(doc => {
+          productsList.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Fetch orders sorted by createdAt desc
+        const ordSnap = await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc")));
+        ordersList = [];
+        ordSnap.forEach(doc => {
+          ordersList.push({ id: doc.id, ...doc.data() });
+        });
+      } catch (error) {
+        console.error("Error fetching Firebase records: ", error);
+        alert("Firestore read error. Falling back to browser session memory.");
+        await loadMockStorageData();
+      }
+    }
+
+    async function loadMockStorageData() {
+      // Products
+      let savedProducts = JSON.parse(localStorage.getItem("boutique_mock_products") || "null");
+      if (!savedProducts) {
+        savedProducts = [...mockProducts];
+        localStorage.setItem("boutique_mock_products", JSON.stringify(savedProducts));
+      }
+      productsList = savedProducts;
+
+      // Orders
+      let savedOrders = JSON.parse(localStorage.getItem("boutique_mock_orders") || "null");
+      if (!savedOrders) {
+        // Seed initial order for demonstration
+        savedOrders = [
+          {
+            id: "MOCK-ORD-74A",
+            customerName: "Alice Wonderland",
+            phone: "+1 555-0199",
+            address: "777 Cheshire Lane, Forest Hill",
+            notes: "Call when outside please.",
+            items: [
+              { productId: "mock1", name: "Linen Gold Trim Kimono", price: 180, qty: 1, variant: { size: "M", color: "Ivory" } },
+              { productId: "mock3", name: "Ribbed Merino Knit Dress", price: 195, qty: 2, variant: { size: "S", color: "Charcoal Gray" } }
+            ],
+            total: 570.00,
+            status: "pending",
+            createdAt: { seconds: Date.now() / 1000 - 3600 * 2 } // 2 hours ago
+          },
+          {
+            id: "MOCK-ORD-12C",
+            customerName: "Bob Smith",
+            phone: "+1 555-0233",
+            address: "42 Wallaby Way, Sydney",
+            notes: "",
+            items: [
+              { productId: "mock2", name: "Velvet Double-Breasted Blazer", price: 240, qty: 1, variant: { size: "L", color: "Midnight Blue" } }
+            ],
+            total: 240.00,
+            status: "shipped",
+            createdAt: { seconds: Date.now() / 1000 - 86400 * 1.5 } // 1.5 days ago
+          }
+        ];
+        localStorage.setItem("boutique_mock_orders", JSON.stringify(savedOrders));
+      }
+      ordersList = savedOrders;
+    }
+
+    // Render Orders
+    function renderOrdersTable() {
+      const tbody = document.getElementById("orders-table-body");
+      const countEl = document.getElementById("orders-count");
+      if (!tbody) return;
+
+      countEl.textContent = ordersList.length;
+
+      if (ordersList.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="text-center text-muted" style="padding: var(--spacing-md) 0;">
+              No customer orders received yet.
+            </td>
+          </tr>`;
+        return;
+      }
+
+      let html = "";
+      ordersList.forEach((order, idx) => {
+        const orderDate = order.createdAt?.seconds 
+          ? new Date(order.createdAt.seconds * 1000).toLocaleString() 
+          : new Date(order.createdAt).toLocaleString();
+          
+        const itemsSummary = order.items.map(item => {
+          const varDesc = [item.variant?.size, item.variant?.color].filter(Boolean).join(" / ");
+          return `• ${item.qty}x ${item.name} ${varDesc ? `(${varDesc})` : ''}`;
+        }).join("<br>");
+
+        const contactDetails = `
+          <strong>${order.customerName}</strong><br>
+          <span style="font-size:0.85rem;">Phone: ${order.phone}</span><br>
+          <span style="font-size:0.8rem; color:var(--text-muted);">${order.address}</span>
+          ${order.notes ? `<br><em style="font-size:0.8rem; color:#A34E4E;">Note: ${order.notes}</em>` : ''}
+        `;
+
+        html += `
+          <tr>
+            <td><strong>#${order.id}</strong></td>
+            <td style="font-size: 0.85rem;">${orderDate}</td>
+            <td>${contactDetails}</td>
+            <td style="font-size: 0.85rem; line-height:1.4;">${itemsSummary}</td>
+            <td style="font-family: var(--font-heading); font-weight:600;">$${order.total.toFixed(2)}</td>
+            <td>
+              <select class="form-input status-selector" data-id="${order.id}" data-index="${idx}" style="padding: 0.3rem; font-size: 0.85rem; width: auto; background-color: white;">
+                <option value="pending" ${order.status === "pending" ? "selected" : ""}>Pending</option>
+                <option value="confirmed" ${order.status === "confirmed" ? "selected" : ""}>Confirmed</option>
+                <option value="shipped" ${order.status === "shipped" ? "selected" : ""}>Shipped</option>
+                <option value="delivered" ${order.status === "delivered" ? "selected" : ""}>Delivered</option>
+              </select>
+            </td>
+            <td>
+              <button class="btn btn-secondary trigger-wa-btn" data-id="${order.id}" data-index="${idx}" style="padding: 0.35rem 0.6rem; font-size: 0.75rem;">
+                <i class="fab fa-whatsapp"></i> Chat
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+
+      // Bind selectors
+      document.querySelectorAll(".status-selector").forEach(sel => {
+        sel.addEventListener("change", async (e) => {
+          const orderId = sel.getAttribute("data-id");
+          const idx = parseInt(sel.getAttribute("data-index"));
+          const newStatus = e.target.value;
+          
+          await updateOrderStatus(orderId, idx, newStatus);
+        });
+      });
+
+      // Bind WhatsApp text launcher
+      document.querySelectorAll(".trigger-wa-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const idx = parseInt(btn.getAttribute("data-index"));
+          openCustomerChat(ordersList[idx]);
+        });
+      });
+    }
+
+    async function updateOrderStatus(orderId, idx, newStatus) {
+      if (isConfigured) {
+        try {
+          await updateDoc(doc(db, "orders", orderId), { status: newStatus });
+          ordersList[idx].status = newStatus;
+          return;
+        } catch (error) {
+          console.error("Firestore status update failed:", error);
+          alert("Error updating database record: " + error.message);
+        }
+      }
+
+      // Mock update
+      ordersList[idx].status = newStatus;
+      localStorage.setItem("boutique_mock_orders", JSON.stringify(ordersList));
+    }
+
+    function openCustomerChat(order) {
+      const cleanPhone = order.phone.replace(/[\s\-\+\(\)]/g, "");
+      let message = `Hello ${order.customerName}, this is VibeBoutique. `;
+      message += `Regarding your order #${order.id} totaling $${order.total.toFixed(2)}: `;
+      message += `Your order status is currently: *${order.status.toUpperCase()}*.`;
+      
+      const encoded = encodeURIComponent(message);
+      window.open(`https://wa.me/${cleanPhone}?text=${encoded}`, "_blank");
+    }
+
+    // Render Products Catalog
+    function renderProductsTable() {
+      const tbody = document.getElementById("products-table-body");
+      const countEl = document.getElementById("products-count");
+      if (!tbody) return;
+
+      countEl.textContent = productsList.length;
+
+      if (productsList.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="text-center text-muted" style="padding: var(--spacing-md) 0;">
+              No products found in the catalog.
+            </td>
+          </tr>`;
+        return;
+      }
+
+      let html = "";
+      productsList.forEach((prod, idx) => {
+        html += `
+          <tr id="prod-row-${prod.id}">
+            <td>
+              <img src="${prod.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop'}" style="width:40px; aspect-ratio:3/4; object-fit:cover; border-radius: var(--radius-sm); border:1px solid var(--border-color);" alt="${prod.name}">
+            </td>
+            <td><strong>${prod.name}</strong></td>
+            <td><span class="product-category" style="font-size:0.85rem;">${prod.category || 'Garments'}</span></td>
+            <td style="font-family: var(--font-heading); font-weight:600;">$${Number(prod.price).toFixed(2)}</td>
+            <td>
+              <span style="font-weight: 500; color: ${prod.stock <= 0 ? '#A34E4E' : 'inherit'}">
+                ${prod.stock <= 0 ? 'Out of Stock' : `${prod.stock} Units`}
+              </span>
+            </td>
+            <td>
+              <span class="status-badge ${prod.featured ? 'confirmed' : 'pending'}" style="font-size:0.7rem;">
+                ${prod.featured ? 'Yes' : 'No'}
+              </span>
+            </td>
+            <td>
+              <div style="display:flex; gap:0.5rem;">
+                <a href="product-form.html?id=${prod.id}" class="btn btn-secondary" style="padding: 0.35rem 0.6rem; font-size: 0.75rem;">
+                  <i class="fas fa-pen-to-square"></i> Edit
+                </a>
+                <button class="btn btn-danger delete-prod-btn" data-id="${prod.id}" data-index="${idx}" style="padding: 0.35rem 0.6rem; font-size: 0.75rem;">
+                  <i class="fas fa-trash-can"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+
+      // Bind deletes
+      document.querySelectorAll(".delete-prod-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const prodId = btn.getAttribute("data-id");
+          const idx = parseInt(btn.getAttribute("data-index"));
+          
+          if (confirm(`Are you sure you want to delete "${productsList[idx].name}"?`)) {
+            await deleteProduct(prodId, idx);
+          }
+        });
+      });
+    }
+
+    async function deleteProduct(prodId, idx) {
+      if (isConfigured) {
+        try {
+          await deleteDoc(doc(db, "products", prodId));
+          productsList.splice(idx, 1);
+          renderProductsTable();
+          return;
+        } catch (error) {
+          console.error("Firestore product deletion error: ", error);
+          alert("Failed to delete database record: " + error.message);
+        }
+      }
+
+      // Mock delete
+      productsList.splice(idx, 1);
+      localStorage.setItem("boutique_mock_products", JSON.stringify(productsList));
+      renderProductsTable();
+    }
+  </script>
+</body>
+</html>

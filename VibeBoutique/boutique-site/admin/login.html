@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boutique Admin — Login</title>
+  <meta name="description" content="Secure administrative login portal for VibeBoutique catalog and order management.">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- Injected by main.js -->
+  <header></header>
+
+  <main class="section">
+    <div class="container">
+      <div class="admin-login-wrapper">
+        <div class="checkout-card" style="box-shadow: var(--shadow-lg);">
+          <div class="text-center" style="margin-bottom: var(--spacing-sm);">
+            <p class="section-subtitle" style="font-size: 0.75rem; letter-spacing: 0.2em;">Portal</p>
+            <h1 style="font-family: var(--font-heading); font-size: 2rem; margin-bottom: 0.5rem;">Admin Login</h1>
+            <p class="text-muted" style="font-size: 0.85rem;">Sign in to manage catalog products and incoming orders.</p>
+          </div>
+
+          <!-- Error Alert Banner -->
+          <div id="login-error-alert" style="display: none; background-color: #FDF2F2; border: 1px solid #F8B4B4; color: #9B1C1C; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; margin-bottom: var(--spacing-sm);">
+            <!-- Error message text -->
+          </div>
+
+          <form id="admin-login-form">
+            <div class="form-group">
+              <label for="login-email">Email Address</label>
+              <input type="email" id="login-email" class="form-input" placeholder="admin@vibeboutique.com" required autocomplete="username">
+            </div>
+            <div class="form-group" style="margin-bottom: var(--spacing-md);">
+              <label for="login-password">Password</label>
+              <input type="password" id="login-password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+              Sign In
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Injected by main.js -->
+  <footer></footer>
+
+  <!-- Scripts -->
+  <script type="module" src="../js/main.js"></script>
+  <script type="module" src="../js/auth.js"></script>
+  <script type="module">
+    import { loginAdmin } from "../js/auth.js";
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("admin-login-form");
+      const errorAlert = document.getElementById("login-error-alert");
+
+      if (form) {
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (errorAlert) errorAlert.style.display = "none";
+
+          const email = document.getElementById("login-email").value.trim();
+          const password = document.getElementById("login-password").value;
+
+          try {
+            await loginAdmin(email, password);
+            // Redirection is handled in auth.js state change listener, 
+            // but just in case:
+            window.location.href = "dashboard.html";
+          } catch (error) {
+            console.error("Login attempt failed:", error);
+            if (errorAlert) {
+              errorAlert.textContent = getFriendlyError(error.code || error.message);
+              errorAlert.style.display = "block";
+            }
+          }
+        });
+      }
+    });
+
+    function getFriendlyError(code) {
+      switch (code) {
+        case "auth/invalid-email":
+          return "Invalid email address format.";
+        case "auth/user-disabled":
+          return "This administrator account has been disabled.";
+        case "auth/user-not-found":
+        case "auth/wrong-password":
+        case "auth/invalid-credential":
+          return "Incorrect email or password.";
+        default:
+          return "Authentication failed: " + code;
+      }
+    }
+  </script>
+</body>
+</html>

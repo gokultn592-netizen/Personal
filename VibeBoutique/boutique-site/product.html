@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VibeBoutique — Product Details</title>
+  <meta name="description" content="View product specifications, configure size or color variations, and prepare your custom selection for checkout.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Injected by main.js -->
+  <header></header>
+
+  <main class="section">
+    <div class="container" id="product-detail-container">
+      <!-- Loading Skeleton -->
+      <div class="text-center text-muted" style="padding: var(--spacing-xl) 0;">
+        <i class="fas fa-spinner fa-spin" style="font-size: 2.5rem; color: var(--accent-gold); margin-bottom: var(--spacing-sm);"></i>
+        <p>Fetching product details...</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Injected by main.js -->
+  <footer></footer>
+
+  <!-- Scripts -->
+  <script type="module" src="js/main.js"></script>
+  <script type="module">
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { db, isConfigured } from "./js/firebase-config.js";
+    import { mockProducts } from "./js/products.js";
+    import { updateCartBadge } from "./js/main.js";
+
+    let activeProduct = null;
+    let selectedSize = "";
+    let selectedColor = "";
+    let quantity = 1;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      const container = document.getElementById("product-detail-container");
+      if (!container) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get("id");
+
+      if (!productId) {
+        container.innerHTML = `
+          <div class="text-center text-muted" style="padding: var(--spacing-lg) 0;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 2.5rem; color: var(--accent-gold); margin-bottom: var(--spacing-sm);"></i>
+            <p>Product ID is missing. Return to <a href="shop.html" style="text-decoration: underline; color: var(--text-primary);">Shop Catalog</a>.</p>
+          </div>`;
+        return;
+      }
+
+      await loadProductDetails(productId, container);
+    });
+
+    async function loadProductDetails(id, container) {
+      // 1. Fetch data
+      if (isConfigured) {
+        try {
+          const docRef = doc(db, "products", id);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            activeProduct = { id: docSnap.id, ...docSnap.data() };
+          }
+        } catch (error) {
+          console.error("Error reading Firestore product:", error);
+        }
+      }
+
+      // 2. Try mock fallback if not found in Firestore
+      if (!activeProduct) {
+        activeProduct = mockProducts.find(p => p.id === id);
+      }
+
+      // 3. Not found anywhere check
+      if (!activeProduct) {
+        container.innerHTML = `
+          <div class="text-center text-muted" style="padding: var(--spacing-lg) 0;">
+            <i class="fas fa-question-circle" style="font-size: 2.5rem; color: var(--accent-gold); margin-bottom: var(--spacing-sm);"></i>
+            <p>Product not found. Return to <a href="shop.html" style="text-decoration: underline; color: var(--text-primary);">Shop Catalog</a>.</p>
+          </div>`;
+        return;
+      }
+
+      // Set page Title tag
+      document.title = `${activeProduct.name} — VibeBoutique`;
+
+      // 4. Render product information template
+      const outOfStock = activeProduct.stock <= 0;
+      const sizeOptions = activeProduct.sizes || [];
+      const colorOptions = activeProduct.colors || [];
+
+      // Pre-select options if they exist
+      if (sizeOptions.length > 0) selectedSize = sizeOptions[0];
+      if (colorOptions.length > 0) selectedColor = colorOptions[0];
+
+      container.innerHTML = `
+        <div class="product-detail-layout">
+          <!-- Gallery -->
+          <div class="product-detail-gallery">
+            <div class="main-image-container">
+              <img id="detail-main-img" src="${activeProduct.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop'}" alt="${activeProduct.name}">
+            </div>
+          </div>
+
+          <!-- Info -->
+          <div class="product-detail-info">
+            <span class="detail-category">${activeProduct.category || 'Garments'}</span>
+            <h1 class="detail-title">${activeProduct.name}</h1>
+            <div class="detail-price">$${Number(activeProduct.price).toFixed(2)}</div>
+            
+            <p class="detail-description">${activeProduct.description || 'No description available for this curated item.'}</p>
+            
+            <div class="options-section">
+              <!-- Sizes -->
+              ${sizeOptions.length > 0 ? `
+                <div class="option-group">
+                  <span class="option-label">Size: <span id="size-preview" style="font-weight: normal; color: var(--text-muted);">${selectedSize}</span></span>
+                  <div class="option-pills" id="size-options">
+                    ${sizeOptions.map(size => `<button class="pill-option ${size === selectedSize ? 'active' : ''}" data-size="${size}">${size}</button>`).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              <!-- Colors -->
+              ${colorOptions.length > 0 ? `
+                <div class="option-group" style="margin-top: 0.5rem;">
+                  <span class="option-label">Color: <span id="color-preview" style="font-weight: normal; color: var(--text-muted);">${selectedColor}</span></span>
+                  <div class="option-pills" id="color-options">
+                    ${colorOptions.map(color => `<button class="pill-option ${color === selectedColor ? 'active' : ''}" data-color="${color}">${color}</button>`).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              <!-- Stock Availability and Add controls -->
+              <div style="margin-top: var(--spacing-sm); display: flex; flex-direction: column; gap: var(--spacing-xs);">
+                <span class="option-label">Quantity:</span>
+                <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
+                  <div class="quantity-selector">
+                    <button class="qty-btn" id="qty-minus" ${outOfStock ? 'disabled' : ''}>-</button>
+                    <input type="text" id="qty-input" class="qty-input" value="1" readonly>
+                    <button class="qty-btn" id="qty-plus" ${outOfStock ? 'disabled' : ''}>+</button>
+                  </div>
+                  <span class="text-muted" style="font-size: 0.85rem;">
+                    ${outOfStock ? '<span style="color:#A34E4E; font-weight:600;">Sold Out</span>' : `${activeProduct.stock} items available`}
+                  </span>
+                </div>
+              </div>
+
+              <div style="margin-top: var(--spacing-md);">
+                <button id="add-to-cart-btn" class="btn btn-primary" style="width: 100%;" ${outOfStock ? 'disabled class="btn btn-disabled"' : ''}>
+                  ${outOfStock ? 'Sold Out' : 'Add To Cart'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // 5. Attach event listeners
+      setupDetailPageEvents();
+    }
+
+    function setupDetailPageEvents() {
+      // Size Selection
+      const sizeOptions = document.getElementById("size-options");
+      if (sizeOptions) {
+        sizeOptions.addEventListener("click", (e) => {
+          const btn = e.target.closest("button");
+          if (!btn) return;
+          sizeOptions.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          selectedSize = btn.getAttribute("data-size");
+          const preview = document.getElementById("size-preview");
+          if (preview) preview.textContent = selectedSize;
+        });
+      }
+
+      // Color Selection
+      const colorOptions = document.getElementById("color-options");
+      if (colorOptions) {
+        colorOptions.addEventListener("click", (e) => {
+          const btn = e.target.closest("button");
+          if (!btn) return;
+          colorOptions.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          selectedColor = btn.getAttribute("data-color");
+          const preview = document.getElementById("color-preview");
+          if (preview) preview.textContent = selectedColor;
+        });
+      }
+
+      // Quantity buttons
+      const qtyMinus = document.getElementById("qty-minus");
+      const qtyPlus = document.getElementById("qty-plus");
+      const qtyInput = document.getElementById("qty-input");
+
+      if (qtyMinus && qtyPlus && qtyInput) {
+        qtyMinus.addEventListener("click", () => {
+          if (quantity > 1) {
+            quantity--;
+            qtyInput.value = quantity;
+          }
+        });
+
+        qtyPlus.addEventListener("click", () => {
+          if (quantity < activeProduct.stock) {
+            quantity++;
+            qtyInput.value = quantity;
+          }
+        });
+      }
+
+      // Add to Cart Action
+      const cartBtn = document.getElementById("add-to-cart-btn");
+      if (cartBtn) {
+        cartBtn.addEventListener("click", () => {
+          if (activeProduct.stock <= 0) return;
+
+          addToCartLocal({
+            productId: activeProduct.id,
+            name: activeProduct.name,
+            price: Number(activeProduct.price),
+            imageUrl: activeProduct.imageUrl,
+            qty: quantity,
+            variant: {
+              size: selectedSize,
+              color: selectedColor
+            },
+            maxStock: activeProduct.stock
+          });
+
+          // Elegant feedback animation
+          const originalText = cartBtn.textContent;
+          cartBtn.textContent = "Added to Cart ✓";
+          cartBtn.style.backgroundColor = "var(--accent-green)";
+          cartBtn.style.borderColor = "var(--accent-green)";
+          cartBtn.style.color = "white";
+          cartBtn.disabled = true;
+
+          setTimeout(() => {
+            cartBtn.textContent = originalText;
+            cartBtn.style.backgroundColor = "";
+            cartBtn.style.borderColor = "";
+            cartBtn.style.color = "";
+            cartBtn.disabled = false;
+          }, 1500);
+        });
+      }
+    }
+
+    function addToCartLocal(item) {
+      let cart = [];
+      try {
+        cart = JSON.parse(localStorage.getItem("boutique_cart") || "[]");
+      } catch (e) {
+        console.error("Cart corrupt, resetting", e);
+      }
+
+      // Check if duplicate item (matching productId + variant configurations)
+      const duplicateIndex = cart.findIndex(c => 
+        c.productId === item.productId && 
+        c.variant.size === item.variant.size && 
+        c.variant.color === item.variant.color
+      );
+
+      if (duplicateIndex > -1) {
+        // Increment quantity, capping it to max stock
+        const newQty = cart[duplicateIndex].qty + item.qty;
+        cart[duplicateIndex].qty = Math.min(newQty, item.maxStock);
+      } else {
+        cart.push(item);
+      }
+
+      localStorage.setItem("boutique_cart", JSON.stringify(cart));
+      updateCartBadge();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VibeBoutique — Curated Premium Storefront</title>
+  <meta name="description" content="Browse and shop high-quality clothing and luxury accessories selected for your custom vibe. Check out securely via WhatsApp.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Premium Header injected by main.js -->
+  <header></header>
+
+  <!-- Hero Banner -->
+  <section class="hero">
+    <div class="hero-overlay"></div>
+    <div class="container hero-content">
+      <h2 class="hero-title" style="font-family: var(--font-heading);">
+        Express Your <br><span style="color: var(--accent-gold); font-style: italic;">Unspoken</span> Vibe.
+      </h2>
+      <p class="hero-description">
+        Curating limited-run styles, hand-crafted materials, and unique aesthetics for the contemporary wardrobe.
+      </p>
+      <div class="hero-actions">
+        <a href="shop.html" class="btn btn-primary">Explore Catalog</a>
+        <a href="shop.html?filter=new" class="btn btn-secondary">New Arrivals</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Admin Portal Banner — injected by JS only for admin role -->
+  <div id="admin-portal-banner" style="display:none; background: linear-gradient(135deg, #1C1C1C 0%, #2A2A2A 100%); border-bottom: 2px solid #C5A880;">
+    <div class="container" style="padding: 1.25rem var(--spacing-md); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <i class="fas fa-shield-halved" style="font-size: 1.4rem; color: #C5A880;"></i>
+        <div>
+          <div style="color: #FAF9F6; font-weight: 600; font-size: 0.95rem;">Admin Portal</div>
+          <div style="color: #8C8C8C; font-size: 0.8rem;">Manage your catalog, orders, and store settings</div>
+        </div>
+      </div>
+      <a href="admin/dashboard.html" class="btn" style="background: #C5A880; color: #1C1C1C; border: none; padding: 0.6rem 1.5rem; font-size: 0.85rem; font-weight: 600;">
+        Open Dashboard &rarr;
+      </a>
+    </div>
+  </div>
+
+  <!-- Dynamic Featured Section -->
+  <section class="section">
+    <div class="container">
+      <div class="text-center" style="margin-bottom: var(--spacing-lg);">
+        <p class="section-subtitle">The Curated Line</p>
+        <h2 class="section-title">Featured Pieces</h2>
+      </div>
+      
+      <!-- Injected by products.js -->
+      <div id="featured-products-grid" class="product-grid">
+        <div class="text-center text-muted" style="grid-column: 1 / -1; padding: var(--spacing-lg) 0;">
+          <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: var(--spacing-sm);"></i>
+          <p>Loading featured pieces...</p>
+        </div>
+      </div>
+
+      <div class="text-center" style="margin-top: var(--spacing-lg);">
+        <a href="shop.html" class="btn btn-secondary">View All Styles</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Value Statement -->
+  <section class="section" style="background-color: var(--bg-secondary); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+    <div class="container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--spacing-lg); text-align: center;">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+        <i class="fas fa-gem" style="font-size: 2rem; color: var(--accent-gold);"></i>
+        <h3 style="font-size: 1.2rem; font-family: var(--font-body); font-weight: 600;">Premium Materials</h3>
+        <p class="text-muted" style="font-size: 0.9rem;">We source premium cotton, silk, and sustainable fibers to build items that last.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+        <i class="fas fa-truck-fast" style="font-size: 2rem; color: var(--accent-gold);"></i>
+        <h3 style="font-size: 1.2rem; font-family: var(--font-body); font-weight: 600;">Fast Order Confirmation</h3>
+        <p class="text-muted" style="font-size: 0.9rem;">Check out instantly in our browser, and finalize delivery steps directly via WhatsApp.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+        <i class="fas fa-leaf" style="font-size: 2rem; color: var(--accent-gold);"></i>
+        <h3 style="font-size: 1.2rem; font-family: var(--font-body); font-weight: 600;">Ethically Curated</h3>
+        <p class="text-muted" style="font-size: 0.9rem;">Every partner studio operates under fair-wage standards and ethical workspaces.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Injected by main.js -->
+  <footer></footer>
+
+  <!-- Scripts -->
+  <script type="module" src="js/main.js"></script>
+  <script type="module">
+    // Show admin banner once auth state is resolved
+    window.addEventListener("authReady", (e) => {
+      if (e.detail.role === "admin") {
+        const banner = document.getElementById("admin-portal-banner");
+        if (banner) banner.style.display = "block";
+      }
+    });
+  </script>
+  <script type="module">
+    import { collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { db, isConfigured } from "./js/firebase-config.js";
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      const grid = document.getElementById("featured-products-grid");
+      if (!grid) return;
+
+      if (!isConfigured) {
+        // Fallback mockup items for demonstration if Firebase isn't configured yet
+        renderMockFeaturedProducts(grid);
+        return;
+      }
+
+      try {
+        const q = query(
+          collection(db, "products"),
+          where("featured", "==", true),
+          limit(4)
+        );
+        const querySnapshot = await getDocs(q);
+        
+        let html = "";
+        
+        if (querySnapshot.empty) {
+          // If no products are featured, fetch any 4 products as fallback
+          const fallbackSnapshot = await getDocs(query(collection(db, "products"), limit(4)));
+          if (fallbackSnapshot.empty) {
+            grid.innerHTML = `
+              <div class="text-center text-muted" style="grid-column: 1 / -1; padding: var(--spacing-lg) 0;">
+                <p>No featured products found. Please check back later or update in Admin Dashboard.</p>
+              </div>`;
+            return;
+          }
+          renderSnapshot(grid, fallbackSnapshot);
+        } else {
+          renderSnapshot(grid, querySnapshot);
+        }
+      } catch (error) {
+        console.error("Error loading featured products:", error);
+        renderMockFeaturedProducts(grid);
+      }
+    });
+
+    function renderSnapshot(container, snapshot) {
+      let html = "";
+      snapshot.forEach(doc => {
+        const product = doc.data();
+        const productId = doc.id;
+        const outOfStock = product.stock <= 0;
+        
+        html += `
+          <article class="product-card" id="product-${productId}">
+            <a href="product.html?id=${productId}" class="product-image-wrapper">
+              <img class="product-img" src="${product.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop'}" alt="${product.name}">
+              ${product.featured ? '<span class="product-badge featured">Featured</span>' : ''}
+            </a>
+            <div class="product-info">
+              <span class="product-category">${product.category || 'Garments'}</span>
+              <a href="product.html?id=${productId}"><h3 class="product-title">${product.name}</h3></a>
+              <div class="product-price">$${Number(product.price).toFixed(2)}</div>
+              ${outOfStock ? '<div class="product-out-of-stock">Sold Out</div>' : ''}
+            </div>
+          </article>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function renderMockFeaturedProducts(container) {
+      const mockItems = [
+        {
+          id: "mock1",
+          name: "Linen Gold Trim Kimono",
+          price: 180,
+          category: "Lounge",
+          featured: true,
+          imageUrl: "https://images.unsplash.com/photo-1544441893-675973e31985?w=600&auto=format&fit=crop",
+          stock: 5
+        },
+        {
+          id: "mock2",
+          name: "Velvet Double-Breasted Blazer",
+          price: 240,
+          category: "Tailoring",
+          featured: true,
+          imageUrl: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&auto=format&fit=crop",
+          stock: 2
+        },
+        {
+          id: "mock3",
+          name: "Ribbed Merino Knit Dress",
+          price: 195,
+          category: "Knitwear",
+          featured: true,
+          imageUrl: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&auto=format&fit=crop",
+          stock: 12
+        },
+        {
+          id: "mock4",
+          name: "Minimalist Brass Buckle Belt",
+          price: 85,
+          category: "Accessories",
+          featured: true,
+          imageUrl: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop",
+          stock: 0
+        }
+      ];
+
+      let html = "";
+      mockItems.forEach(item => {
+        const outOfStock = item.stock <= 0;
+        html += `
+          <article class="product-card">
+            <a href="product.html?id=${item.id}" class="product-image-wrapper">
+              <img class="product-img" src="${item.imageUrl}" alt="${item.name}">
+              <span class="product-badge featured">Featured</span>
+            </a>
+            <div class="product-info">
+              <span class="product-category">${item.category}</span>
+              <a href="product.html?id=${item.id}"><h3 class="product-title">${item.name}</h3></a>
+              <div class="product-price">$${Number(item.price).toFixed(2)}</div>
+              ${outOfStock ? '<div class="product-out-of-stock">Sold Out</div>' : ''}
+            </div>
+          </article>
+        `;
+      });
+      container.innerHTML = html;
+    }
+  </script>
+</body>
+</html>

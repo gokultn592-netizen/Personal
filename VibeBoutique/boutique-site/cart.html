@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VibeBoutique — Shopping Cart</title>
+  <meta name="description" content="View items in your cart, update quantities, review order subtotals, and proceed to secure checkout confirmation.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Injected by main.js -->
+  <header></header>
+
+  <main class="section">
+    <div class="container">
+      
+      <div style="margin-bottom: var(--spacing-md);">
+        <p class="section-subtitle">Your Selection</p>
+        <h1 class="section-title">Shopping Cart</h1>
+      </div>
+
+      <div class="cart-layout" id="cart-content-wrapper">
+        <!-- Rendered by js/cart.js -->
+        <div class="text-center text-muted" style="grid-column: 1 / -1; padding: var(--spacing-lg) 0;">
+          <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: var(--spacing-sm);"></i>
+          <p>Loading your cart...</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Injected by main.js -->
+  <footer></footer>
+
+  <!-- Scripts -->
+  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/cart.js"></script>
+</body>
+</html>

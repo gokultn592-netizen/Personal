@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VibeBoutique — Catalog</title>
+  <meta name="description" content="Explore our complete line of premium garments and accessories. Filter by category, search for items, and find your perfect fit.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Injected by main.js -->
+  <header></header>
+
+  <main class="section">
+    <div class="container">
+      
+      <!-- Catalog Header -->
+      <div style="margin-bottom: var(--spacing-md);">
+        <p class="section-subtitle">Catalog</p>
+        <h1 class="section-title">Explore Collection</h1>
+      </div>
+
+      <!-- Controls: Category filter + Search + Sort -->
+      <div class="filter-container">
+        <div class="shop-controls">
+          <!-- Category Tabs (Generated dynamically) -->
+          <ul id="category-tabs" class="filter-tabs">
+            <li class="filter-tab active" data-category="all">All</li>
+          </ul>
+
+          <!-- Search Input -->
+          <div class="search-wrapper">
+            <input type="text" id="search-input" class="search-input" placeholder="Search products...">
+            <i class="fas fa-search"></i>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+          <label for="sort-select" style="font-size: 0.8rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; color: var(--text-muted);">Sort By:</label>
+          <select id="sort-select" class="form-input" style="padding: 0.4rem var(--spacing-sm); font-size: 0.85rem; width: auto; background-color: white;">
+            <option value="featured">Featured</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="newest">Newest Arrivals</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Products Grid -->
+      <div id="products-grid" class="product-grid">
+        <div class="text-center text-muted" style="grid-column: 1 / -1; padding: var(--spacing-lg) 0;">
+          <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: var(--spacing-sm);"></i>
+          <p>Loading catalog...</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Injected by main.js -->
+  <footer></footer>
+
+  <!-- Scripts -->
+  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/products.js"></script>
+</body>
+</html>
