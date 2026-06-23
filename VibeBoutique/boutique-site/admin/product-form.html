@@ -64,6 +64,14 @@
               <input type="text" id="prod-sizes" class="form-input" placeholder="e.g. S, M, L">
             </div>
 
+            <!-- Dynamic Stock By Size Section -->
+            <div id="size-stock-container" style="display: none; grid-column: 1 / -1; background-color: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: var(--spacing-sm); margin-top: var(--spacing-xs); margin-bottom: var(--spacing-sm);">
+              <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--accent-gold); font-family: var(--font-heading);">Stock by Size</h4>
+              <div id="size-stock-inputs" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: var(--spacing-sm);">
+                <!-- Dynamic inputs injected by JS -->
+              </div>
+            </div>
+
             <!-- Colors -->
             <div class="form-group">
               <label for="prod-colors">Colors (comma-separated)</label>
@@ -82,7 +90,7 @@
               <div class="file-upload-wrapper" id="upload-wrapper">
                 <i class="fas fa-cloud-arrow-up" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 0.5rem;"></i>
                 <p style="font-size: 0.9rem;">Click or drag file to upload</p>
-                <span class="text-muted" style="font-size: 0.75rem;">JPG, PNG up to 4MB. Uploaded securely to Backblaze B2.</span>
+                <span class="text-muted" style="font-size: 0.75rem;">JPG, PNG, WEBP up to 32MB. Hosted for free via ImgBB.</span>
                 <input type="file" id="prod-image-file" accept="image/*">
               </div>
 
@@ -148,7 +156,13 @@
         fileInput.addEventListener("change", handleImageUpload);
       }
 
-      // 4. Bind Form Submission
+      // 4. Bind sizes input for dynamic size-specific stock fields
+      const sizesInput = document.getElementById("prod-sizes");
+      if (sizesInput) {
+        sizesInput.addEventListener("input", updateSizeStockFields);
+      }
+
+      // 5. Bind Form Submission
       const form = document.getElementById("product-editor-form");
       if (form) {
         form.addEventListener("submit", handleFormSave);
@@ -188,6 +202,16 @@
       document.getElementById("prod-price").value = product.price || "";
       document.getElementById("prod-stock").value = product.stock || "";
       document.getElementById("prod-sizes").value = (product.sizes || []).join(", ");
+      
+      updateSizeStockFields();
+      if (product.sizesStock) {
+        for (const [size, val] of Object.entries(product.sizesStock)) {
+          const input = document.getElementById(`size-stock-${size}`);
+          if (input) input.value = val;
+        }
+        calculateTotalStock();
+      }
+
       document.getElementById("prod-colors").value = (product.colors || []).join(", ");
       document.getElementById("prod-desc").value = product.description || "";
       
@@ -207,9 +231,9 @@
       const file = e.target.files[0];
       if (!file) return;
 
-      // Local front-end validation
-      if (file.size > 4 * 1024 * 1024) {
-        alert("File size exceeds 4MB. Please upload a smaller image.");
+      // Local front-end validation (Max 32MB)
+      if (file.size > 32 * 1024 * 1024) {
+        alert("File size exceeds 32MB. Please upload a smaller image.");
         e.target.value = "";
         return;
       }
@@ -223,85 +247,67 @@
       // Set loading state
       if (progressContainer) progressContainer.style.display = "block";
       if (statusText) {
-        statusText.textContent = "Encoding and uploading image...";
+        statusText.textContent = "Uploading image to ImgBB...";
         statusText.style.display = "block";
       }
-      if (progressBar) progressBar.style.width = "10%";
+      if (progressBar) progressBar.style.width = "30%";
 
-      // 1. Convert file to Base64
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64String = reader.result.split(",")[1];
-        if (progressBar) progressBar.style.width = "40%";
+      try {
+        const formData = new FormData();
+        formData.append("image", file);
 
-        // 2. Resolve Vercel Endpoint Target (Local vs Prod)
-        let apiHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-          ? "http://localhost:3000"
-          : "";
-        const uploadUrl = `${apiHost}/api/upload-image`;
+        if (progressBar) progressBar.style.width = "60%";
 
-        try {
-          if (progressBar) progressBar.style.width = "60%";
-          
-          const response = await fetch(uploadUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              fileName: file.name,
-              fileType: file.type,
-              fileBase64: base64String
-            })
-          });
+        const response = await fetch("https://api.imgbb.com/1/upload?key=0a45076649dd34cfa926665f8a2f5935", {
+          method: "POST",
+          body: formData
+        });
 
-          if (progressBar) progressBar.style.width = "90%";
+        if (progressBar) progressBar.style.width = "85%";
 
-          const result = await response.json();
+        const result = await response.json();
 
-          if (response.ok && result.success) {
-            if (progressBar) progressBar.style.width = "100%";
-            if (statusText) statusText.textContent = result.isMock ? "Uploaded (Development Mock Photo) ✓" : "Uploaded successfully ✓";
-            
-            // Set input value
-            document.getElementById("prod-image-url").value = result.imageUrl;
-            
-            // Show preview
-            if (preview) {
-              preview.src = result.imageUrl;
-              preview.style.display = "block";
-            }
-          } else {
-            throw new Error(result.error || "Upload response error");
-          }
-        } catch (err) {
-          console.error("Vercel upload request failed:", err);
-          
-          // Trigger automatic local mockup placeholder fallback
-          const mockPhotos = [
-            "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1539185441755-769473a23570?w=600&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&auto=format&fit=crop"
-          ];
-          const randomMock = mockPhotos[Math.floor(Math.random() * mockPhotos.length)];
-          
+        if (response.ok && result.success && result.data && result.data.url) {
           if (progressBar) progressBar.style.width = "100%";
-          if (statusText) statusText.textContent = "Upload server offline. Used fallback placeholder ✓";
-          
-          document.getElementById("prod-image-url").value = randomMock;
+          if (statusText) statusText.textContent = "Uploaded successfully to ImgBB ✓";
+
+          // Set input value to the direct URL of the hosted image
+          document.getElementById("prod-image-url").value = result.data.url;
+
+          // Show preview
           if (preview) {
-            preview.src = randomMock;
+            preview.src = result.data.url;
             preview.style.display = "block";
           }
-        } finally {
-          setTimeout(() => {
-            if (progressContainer) progressContainer.style.display = "none";
-            if (statusText) statusText.style.display = "none";
-          }, 3000);
+        } else {
+          throw new Error(result.error?.message || "Upload response error from ImgBB");
         }
-      };
-      
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error("ImgBB upload failed:", err);
+        alert("ImgBB upload failed: " + err.message + ". Falling back to a placeholder.");
+
+        // Fallback placeholder image
+        const mockPhotos = [
+          "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop",
+          "https://images.unsplash.com/photo-1539185441755-769473a23570?w=600&auto=format&fit=crop",
+          "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&auto=format&fit=crop"
+        ];
+        const randomMock = mockPhotos[Math.floor(Math.random() * mockPhotos.length)];
+
+        if (progressBar) progressBar.style.width = "100%";
+        if (statusText) statusText.textContent = "Used fallback placeholder ✓";
+
+        document.getElementById("prod-image-url").value = randomMock;
+        if (preview) {
+          preview.src = randomMock;
+          preview.style.display = "block";
+        }
+      } finally {
+        setTimeout(() => {
+          if (progressContainer) progressContainer.style.display = "none";
+          if (statusText) statusText.style.display = "none";
+        }, 3000);
+      }
     }
 
     async function handleFormSave(e) {
@@ -332,6 +338,15 @@
         .map(c => c.trim())
         .filter(Boolean);
 
+      // Parse sizesStock
+      const sizesStock = {};
+      if (sizes.length > 0) {
+        sizes.forEach(size => {
+          const input = document.getElementById(`size-stock-${size}`);
+          sizesStock[size] = input ? (parseInt(input.value) || 0) : 0;
+        });
+      }
+
       if (!imageUrl) {
         alert("Please upload a product cover image first.");
         if (saveBtn) {
@@ -351,6 +366,7 @@
         colors,
         description,
         imageUrl,
+        sizesStock: sizes.length > 0 ? sizesStock : null, // Store size-specific stocks
         updatedAt: isConfigured ? serverTimestamp() : new Date()
       };
 
@@ -394,6 +410,73 @@
 
       localStorage.setItem("boutique_mock_products", JSON.stringify(savedMocks));
       window.location.href = "dashboard.html";
+    }
+
+    function updateSizeStockFields() {
+      const sizesInput = document.getElementById("prod-sizes");
+      const stockInput = document.getElementById("prod-stock");
+      const container = document.getElementById("size-stock-container");
+      const inputsWrapper = document.getElementById("size-stock-inputs");
+
+      if (!sizesInput || !stockInput || !container || !inputsWrapper) return;
+
+      const sizes = sizesInput.value
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      // Keep track of values the user might have already typed in the existing inputs
+      const currentValues = {};
+      inputsWrapper.querySelectorAll("input").forEach(input => {
+        const size = input.getAttribute("data-size");
+        if (size) {
+          currentValues[size] = parseInt(input.value) || 0;
+        }
+      });
+
+      if (sizes.length > 0) {
+        container.style.display = "block";
+        stockInput.readOnly = true;
+        stockInput.style.backgroundColor = "var(--bg-secondary)";
+        stockInput.style.cursor = "not-allowed";
+
+        let html = "";
+        sizes.forEach(size => {
+          const val = currentValues[size] !== undefined ? currentValues[size] : 0;
+          html += `
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <label for="size-stock-${size}" style="font-size: 0.8rem; margin: 0; font-weight: 500;">Size ${size} Stock</label>
+              <input type="number" id="size-stock-${size}" data-size="${size}" class="form-input" min="0" value="${val}" style="padding: 0.4rem; font-size: 0.85rem;" required>
+            </div>
+          `;
+        });
+        inputsWrapper.innerHTML = html;
+
+        // Add event listeners to newly created inputs to calculate overall stock sum
+        inputsWrapper.querySelectorAll("input").forEach(input => {
+          input.addEventListener("input", calculateTotalStock);
+        });
+
+        calculateTotalStock();
+      } else {
+        container.style.display = "none";
+        inputsWrapper.innerHTML = "";
+        stockInput.readOnly = false;
+        stockInput.style.backgroundColor = "";
+        stockInput.style.cursor = "";
+      }
+    }
+
+    function calculateTotalStock() {
+      const inputsWrapper = document.getElementById("size-stock-inputs");
+      const stockInput = document.getElementById("prod-stock");
+      if (!inputsWrapper || !stockInput) return;
+
+      let total = 0;
+      inputsWrapper.querySelectorAll("input").forEach(input => {
+        total += parseInt(input.value) || 0;
+      });
+      stockInput.value = total;
     }
   </script>
 </body>

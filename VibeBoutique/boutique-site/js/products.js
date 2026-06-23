@@ -19,6 +19,7 @@ const mockProducts = [
     imageUrl: "https://images.unsplash.com/photo-1544441893-675973e31985?w=600&auto=format&fit=crop",
     stock: 5,
     sizes: ["S", "M", "L"],
+    sizesStock: { "S": 1, "M": 3, "L": 1 },
     colors: ["Ivory", "Sandy Beige"],
     createdAt: { seconds: Date.now() / 1000 - 86400 * 2 }
   },
@@ -32,6 +33,7 @@ const mockProducts = [
     imageUrl: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&auto=format&fit=crop",
     stock: 2,
     sizes: ["M", "L"],
+    sizesStock: { "M": 1, "L": 1 },
     colors: ["Midnight Blue", "Crimson Velvet"],
     createdAt: { seconds: Date.now() / 1000 - 86400 * 10 }
   },
@@ -45,6 +47,7 @@ const mockProducts = [
     imageUrl: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&auto=format&fit=crop",
     stock: 12,
     sizes: ["XS", "S", "M"],
+    sizesStock: { "XS": 3, "S": 5, "M": 4 },
     colors: ["Sage Green", "Charcoal Gray"],
     createdAt: { seconds: Date.now() / 1000 - 86400 }
   },
@@ -58,6 +61,7 @@ const mockProducts = [
     imageUrl: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop",
     stock: 0,
     sizes: ["One Size"],
+    sizesStock: { "One Size": 0 },
     colors: ["Chestnut Brown", "Noir Black"],
     createdAt: { seconds: Date.now() / 1000 - 86400 * 30 }
   },
@@ -71,6 +75,7 @@ const mockProducts = [
     imageUrl: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=600&auto=format&fit=crop",
     stock: 7,
     sizes: ["S", "M", "L"],
+    sizesStock: { "S": 2, "M": 3, "L": 2 },
     colors: ["Champagne Gold", "Classic Black"],
     createdAt: { seconds: Date.now() / 1000 - 86400 * 5 }
   },
@@ -84,6 +89,7 @@ const mockProducts = [
     imageUrl: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=600&auto=format&fit=crop",
     stock: 4,
     sizes: ["S", "M", "L", "XL"],
+    sizesStock: { "S": 1, "M": 1, "L": 1, "XL": 1 },
     colors: ["Khaki Stone", "Navy Blue"],
     createdAt: { seconds: Date.now() / 1000 - 86400 * 3 }
   },
@@ -97,6 +103,7 @@ const mockProducts = [
     imageUrl: "https://images.unsplash.com/photo-1539185441755-769473a23570?w=600&auto=format&fit=crop",
     stock: 3,
     sizes: ["37", "38", "39", "40"],
+    sizesStock: { "37": 1, "38": 1, "39": 1, "40": 0 },
     colors: ["Warm Tan", "Onyx Black"],
     createdAt: { seconds: Date.now() / 1000 - 86400 * 15 }
   }

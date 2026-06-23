@@ -90,7 +90,6 @@
       document.title = `${activeProduct.name} — VibeBoutique`;
 
       // 4. Render product information template
-      const outOfStock = activeProduct.stock <= 0;
       const sizeOptions = activeProduct.sizes || [];
       const colorOptions = activeProduct.colors || [];
 
@@ -141,19 +140,17 @@
                 <span class="option-label">Quantity:</span>
                 <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
                   <div class="quantity-selector">
-                    <button class="qty-btn" id="qty-minus" ${outOfStock ? 'disabled' : ''}>-</button>
+                    <button class="qty-btn" id="qty-minus" disabled>-</button>
                     <input type="text" id="qty-input" class="qty-input" value="1" readonly>
-                    <button class="qty-btn" id="qty-plus" ${outOfStock ? 'disabled' : ''}>+</button>
+                    <button class="qty-btn" id="qty-plus" disabled>+</button>
                   </div>
-                  <span class="text-muted" style="font-size: 0.85rem;">
-                    ${outOfStock ? '<span style="color:#A34E4E; font-weight:600;">Sold Out</span>' : `${activeProduct.stock} items available`}
-                  </span>
+                  <span id="availability-text" class="text-muted" style="font-size: 0.85rem;"></span>
                 </div>
               </div>
 
               <div style="margin-top: var(--spacing-md);">
-                <button id="add-to-cart-btn" class="btn btn-primary" style="width: 100%;" ${outOfStock ? 'disabled class="btn btn-disabled"' : ''}>
-                  ${outOfStock ? 'Sold Out' : 'Add To Cart'}
+                <button id="add-to-cart-btn" class="btn btn-primary" style="width: 100%;">
+                  Add To Cart
                 </button>
               </div>
             </div>
@@ -161,8 +158,64 @@
         </div>
       `;
 
-      // 5. Attach event listeners
+      // 5. Attach event listeners & run initial stock check
       setupDetailPageEvents();
+      updateStockUIForSelectedSize();
+    }
+
+    function getStockForSize(size) {
+      if (!size) return activeProduct.stock || 0;
+      if (activeProduct.sizesStock && activeProduct.sizesStock[size] !== undefined) {
+        return activeProduct.sizesStock[size];
+      }
+      return activeProduct.stock || 0;
+    }
+
+    function updateStockUIForSelectedSize() {
+      const currentStock = getStockForSize(selectedSize);
+      const outOfStockForSize = currentStock <= 0;
+      
+      // Update availability text
+      const availabilityEl = document.getElementById("availability-text");
+      if (availabilityEl) {
+        availabilityEl.innerHTML = outOfStockForSize 
+          ? '<span style="color:#A34E4E; font-weight:600;">Sold Out in this size</span>' 
+          : `${currentStock} items available`;
+      }
+
+      // Update add to cart button
+      const cartBtn = document.getElementById("add-to-cart-btn");
+      if (cartBtn) {
+        if (outOfStockForSize) {
+          cartBtn.textContent = "Sold Out";
+          cartBtn.disabled = true;
+          cartBtn.className = "btn btn-disabled";
+        } else {
+          cartBtn.textContent = "Add To Cart";
+          cartBtn.disabled = false;
+          cartBtn.className = "btn btn-primary";
+        }
+      }
+
+      // Update quantity selector state
+      const qtyMinus = document.getElementById("qty-minus");
+      const qtyPlus = document.getElementById("qty-plus");
+      const qtyInput = document.getElementById("qty-input");
+      
+      if (outOfStockForSize) {
+        quantity = 0;
+        if (qtyInput) qtyInput.value = "0";
+        if (qtyMinus) qtyMinus.disabled = true;
+        if (qtyPlus) qtyPlus.disabled = true;
+      } else {
+        if (quantity <= 0) quantity = 1;
+        if (quantity > currentStock) {
+          quantity = currentStock;
+        }
+        if (qtyInput) qtyInput.value = quantity;
+        if (qtyMinus) qtyMinus.disabled = quantity <= 1;
+        if (qtyPlus) qtyPlus.disabled = quantity >= currentStock;
+      }
     }
 
     function setupDetailPageEvents() {
@@ -177,6 +230,8 @@
           selectedSize = btn.getAttribute("data-size");
           const preview = document.getElementById("size-preview");
           if (preview) preview.textContent = selectedSize;
+          
+          updateStockUIForSelectedSize();
         });
       }
 
@@ -204,13 +259,18 @@
           if (quantity > 1) {
             quantity--;
             qtyInput.value = quantity;
+            qtyPlus.disabled = quantity >= getStockForSize(selectedSize);
+            qtyMinus.disabled = quantity <= 1;
           }
         });
 
         qtyPlus.addEventListener("click", () => {
-          if (quantity < activeProduct.stock) {
+          const currentStock = getStockForSize(selectedSize);
+          if (quantity < currentStock) {
             quantity++;
             qtyInput.value = quantity;
+            qtyPlus.disabled = quantity >= currentStock;
+            qtyMinus.disabled = quantity <= 1;
           }
         });
       }
@@ -219,7 +279,8 @@
       const cartBtn = document.getElementById("add-to-cart-btn");
       if (cartBtn) {
         cartBtn.addEventListener("click", () => {
-          if (activeProduct.stock <= 0) return;
+          const currentStock = getStockForSize(selectedSize);
+          if (currentStock <= 0) return;
 
           addToCartLocal({
             productId: activeProduct.id,
@@ -231,7 +292,7 @@
               size: selectedSize,
               color: selectedColor
             },
-            maxStock: activeProduct.stock
+            maxStock: currentStock
           });
 
           // Elegant feedback animation
