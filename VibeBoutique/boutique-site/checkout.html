@@ -77,20 +77,65 @@
 
       <!-- Success Confirmation View (Hidden by default) -->
       <div id="checkout-success-view" style="display: none; max-width: 600px; margin: 0 auto; text-align: center; padding: var(--spacing-xl) 0;">
-        <i class="fas fa-circle-check" style="font-size: 5rem; color: var(--accent-green); margin-bottom: var(--spacing-md);"></i>
-        <h1 class="section-title" style="margin-bottom: var(--spacing-xs);">Order Placed!</h1>
+        <i class="fas fa-circle-check" id="success-icon" style="font-size: 5rem; color: var(--accent-green); margin-bottom: var(--spacing-md);"></i>
+        <h1 class="section-title" id="success-title" style="margin-bottom: var(--spacing-xs);">Order Placed!</h1>
         <p class="text-muted" style="font-size: 1.1rem; margin-bottom: var(--spacing-md);">
           Your order has been recorded with ID: <strong id="success-order-id" style="color: var(--text-primary);">#XXXXX</strong>.
         </p>
         
-        <div class="admin-card" style="background-color: var(--bg-secondary); border-color: var(--accent-gold-light); text-align: left; margin-bottom: var(--spacing-lg);">
-          <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">WhatsApp Confirmation Required</h3>
+        <!-- Confirmation Options Card -->
+        <div class="admin-card" id="confirm-options-card" style="background-color: var(--bg-secondary); border-color: var(--accent-gold-light); text-align: left; margin-bottom: var(--spacing-lg);">
+          <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">Select Confirmation Channel</h3>
           <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 1rem;">
-            To complete payments and schedule delivery, click the button below to send your order summary to the boutique owner on WhatsApp.
+            To complete payments and schedule delivery, click one of the channels below to confirm your order details with the boutique owner.
           </p>
-          <a id="whatsapp-confirm-btn" href="#" target="_blank" class="btn btn-green" style="width: 100%; display: flex; gap: 0.5rem;">
-            <i class="fab fa-whatsapp" style="font-size: 1.1rem;"></i> Confirm on WhatsApp
-          </a>
+          
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <!-- Confirm via WhatsApp -->
+            <a id="whatsapp-confirm-btn" href="#" target="_blank" class="btn btn-green" style="width: 100%; display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
+              <i class="fab fa-whatsapp" style="font-size: 1.1rem;"></i> Confirm via WhatsApp
+            </a>
+            <!-- Confirm via Instagram -->
+            <button id="instagram-confirm-btn" class="btn btn-gold" style="width: 100%; display: flex; gap: 0.5rem; justify-content: center; align-items: center; border: 1px solid var(--accent-gold);">
+              <i class="fab fa-instagram" style="font-size: 1.1rem;"></i> Confirm via Instagram
+            </button>
+          </div>
+          
+          <div style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem; text-align: center;">
+            <button id="cancel-order-btn" class="btn btn-danger" style="background-color: transparent; border: 1px solid #A34E4E; color: #A34E4E; padding: 0.5rem 1.5rem; font-size: 0.85rem; cursor: pointer;">
+              Cancel Order
+            </button>
+          </div>
+        </div>
+        
+        <!-- Cancellation Options Card (Hidden by default) -->
+        <div class="admin-card" id="cancel-options-card" style="display: none; background-color: var(--bg-secondary); border-color: #F8B4B4; text-align: left; margin-bottom: var(--spacing-lg);">
+          <h3 style="margin-bottom: 0.5rem; color: #A34E4E;">Order Cancelled</h3>
+          <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 1.25rem;">
+            Your order has been cancelled and items have been returned to stock. How would you like to notify the admin about this cancellation?
+          </p>
+          
+          <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
+            <a id="whatsapp-cancel-notify-btn" href="#" target="_blank" class="btn btn-green" style="width: 100%; display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
+              <i class="fab fa-whatsapp" style="font-size: 1.1rem;"></i> Notify via WhatsApp
+            </a>
+            <button id="instagram-cancel-notify-btn" class="btn btn-gold" style="width: 100%; display: flex; gap: 0.5rem; justify-content: center; align-items: center; border: 1px solid var(--accent-gold);">
+              <i class="fab fa-instagram" style="font-size: 1.1rem;"></i> Notify via Instagram
+            </button>
+          </div>
+
+          <div style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
+            <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--text-primary);">Would you like to place this order again?</h4>
+            <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 1rem;">Select a channel below to directly message the admin to place this order again.</p>
+            <div style="display: flex; gap: 0.5rem;">
+              <a id="whatsapp-reorder-btn" href="#" target="_blank" class="btn btn-primary" style="flex: 1; font-size: 0.75rem; padding: 0.5rem 1rem; justify-content: center;">
+                WhatsApp
+              </a>
+              <button id="instagram-reorder-btn" class="btn btn-secondary" style="flex: 1; font-size: 0.75rem; padding: 0.5rem 1rem; justify-content: center; background-color: white;">
+                Instagram
+              </button>
+            </div>
+          </div>
         </div>
 
         <p style="font-size: 0.9rem;">
@@ -107,13 +152,17 @@
   <!-- Scripts -->
   <script type="module" src="js/main.js"></script>
   <script type="module">
-    import { collection, addDoc, serverTimestamp, doc, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { collection, addDoc, serverTimestamp, doc, runTransaction, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { db, isConfigured } from "./js/firebase-config.js";
     import { appSettings } from "./js/main.js";
     import { updateCartBadge } from "./js/main.js";
 
     let cart = [];
     let subtotal = 0;
+    let lastPlacedOrderId = "";
+    let lastPlacedOrderItems = [];
+    let lastPlacedOrderCustomerName = "";
+    let lastPlacedOrderTotal = 0;
 
     document.addEventListener("DOMContentLoaded", () => {
       // 1. Read Cart data
@@ -334,6 +383,12 @@
       const encodedMessage = encodeURIComponent(message);
       const whatsappUrl = `https://wa.me/${appSettings.whatsappNumber}?text=${encodedMessage}`;
 
+      // Set tracking state variables for cancellation/re-ordering
+      lastPlacedOrderId = orderId;
+      lastPlacedOrderItems = [...cart];
+      lastPlacedOrderCustomerName = customerName;
+      lastPlacedOrderTotal = subtotal;
+
       // 3. Clear cart from localStorage
       localStorage.removeItem("boutique_cart");
       updateCartBadge();
@@ -343,11 +398,299 @@
       const waBtn = document.getElementById("whatsapp-confirm-btn");
       if (waBtn) waBtn.href = whatsappUrl;
 
+      // Bind success screen actions (Instagram DM confirmation, Cancel order, Re-order options)
+      setupSuccessScreenActions();
+      setupReorderWhatsAppLink();
+
       document.getElementById("checkout-form-view").style.display = "none";
       document.getElementById("checkout-success-view").style.display = "block";
       
       // Smooth scroll to top of page
       window.scrollTo(0, 0);
+    }
+
+    // Success Screen Event Handlers & Helpers
+    function setupSuccessScreenActions() {
+      // Confirm via Instagram
+      const igConfirmBtn = document.getElementById("instagram-confirm-btn");
+      if (igConfirmBtn) {
+        igConfirmBtn.onclick = () => {
+          confirmOrderOnInstagram();
+        };
+      }
+
+      // Cancel Order Action
+      const cancelBtn = document.getElementById("cancel-order-btn");
+      if (cancelBtn) {
+        cancelBtn.onclick = () => {
+          cancelPlacedOrder();
+        };
+      }
+
+      // Instagram Cancellation Notification
+      const igCancelNotifyBtn = document.getElementById("instagram-cancel-notify-btn");
+      if (igCancelNotifyBtn) {
+        igCancelNotifyBtn.onclick = () => {
+          notifyCancelOnInstagram();
+        };
+      }
+
+      // Instagram Reorder
+      const igReorderBtn = document.getElementById("instagram-reorder-btn");
+      if (igReorderBtn) {
+        igReorderBtn.onclick = () => {
+          reorderOnInstagram();
+        };
+      }
+    }
+
+    function setupReorderWhatsAppLink() {
+      const whatsappReorderBtn = document.getElementById("whatsapp-reorder-btn");
+      if (whatsappReorderBtn) {
+        whatsappReorderBtn.onclick = () => {
+          // Restore items to shopping cart
+          restoreCartItems();
+          
+          let message = `*Re-ordering Order via WhatsApp!*\n\n`;
+          message += `*Items:*\n`;
+          lastPlacedOrderItems.forEach(item => {
+            const variantDesc = [item.variant?.size, item.variant?.color].filter(Boolean).join(" / ");
+            message += `- ${item.qty}x ${item.name} ${variantDesc ? `(${variantDesc})` : ''} - $${(item.price * item.qty).toFixed(2)}\n`;
+          });
+          message += `\n*Total:* $${lastPlacedOrderTotal.toFixed(2)}\n\n`;
+          message += `*Delivery Info:*\n`;
+          message += `- Name: ${lastPlacedOrderCustomerName}\n`;
+          message += `Please confirm my order. Thank you!`;
+
+          const encoded = encodeURIComponent(message);
+          whatsappReorderBtn.href = `https://wa.me/${appSettings.whatsappNumber}?text=${encoded}`;
+        };
+      }
+    }
+
+    function setupCancelWhatsAppLink() {
+      const whatsappCancelBtn = document.getElementById("whatsapp-cancel-notify-btn");
+      if (whatsappCancelBtn) {
+        let message = `*Order Cancellation Notice from VibeBoutique!*\n\n`;
+        message += `Order ID: \`${lastPlacedOrderId}\`\n`;
+        message += `Customer Name: ${lastPlacedOrderCustomerName}\n`;
+        message += `Total: $${lastPlacedOrderTotal.toFixed(2)}\n\n`;
+        message += `Please note I have cancelled this order. Thank you!`;
+
+        const encoded = encodeURIComponent(message);
+        whatsappCancelBtn.href = `https://wa.me/${appSettings.whatsappNumber}?text=${encoded}`;
+      }
+    }
+
+    async function cancelPlacedOrder() {
+      if (!confirm("Are you sure you want to cancel this order? The items will be returned to stock.")) {
+        return;
+      }
+      
+      const cancelBtn = document.getElementById("cancel-order-btn");
+      if (cancelBtn) {
+        cancelBtn.textContent = "Cancelling...";
+        cancelBtn.disabled = true;
+      }
+
+      if (isConfigured) {
+        try {
+          // 1. Re-increment stock in Firestore transaction
+          await runTransaction(db, async (transaction) => {
+            const productDocs = [];
+            
+            // Read products first
+            for (const item of lastPlacedOrderItems) {
+              if (item.productId.startsWith("mock") || item.productId.startsWith("MOCK")) {
+                continue;
+              }
+              const productRef = doc(db, "products", item.productId);
+              const productSnap = await transaction.get(productRef);
+              if (productSnap.exists()) {
+                productDocs.push({ ref: productRef, snap: productSnap, item });
+              }
+            }
+
+            // Write increments
+            for (const { ref, snap, item } of productDocs) {
+              const productData = snap.data();
+              const currentStock = productData.stock || 0;
+              const refundQty = item.qty;
+
+              if (item.variant && item.variant.size && productData.sizesStock) {
+                const size = item.variant.size;
+                const sizeStock = productData.sizesStock[size] || 0;
+                const newSizesStock = { ...productData.sizesStock };
+                newSizesStock[size] = sizeStock + refundQty;
+                
+                transaction.update(ref, {
+                  stock: currentStock + refundQty,
+                  sizesStock: newSizesStock,
+                  updatedAt: serverTimestamp()
+                });
+              } else {
+                transaction.update(ref, {
+                  stock: currentStock + refundQty,
+                  updatedAt: serverTimestamp()
+                });
+              }
+            }
+          });
+
+          // 2. Update order status in Firestore to 'cancelled'
+          await updateDoc(doc(db, "orders", lastPlacedOrderId), {
+            status: "cancelled",
+            updatedAt: serverTimestamp()
+          });
+
+        } catch (error) {
+          console.error("Firestore cancellation transaction failed:", error);
+          alert("Failed to cancel order in database: " + error.message);
+          if (cancelBtn) {
+            cancelBtn.textContent = "Cancel Order";
+            cancelBtn.disabled = false;
+          }
+          return;
+        }
+      }
+
+      // Revert stock for mock products in localStorage if any mock items were in the order
+      let savedMocks = JSON.parse(localStorage.getItem("boutique_mock_products") || "null");
+      if (savedMocks) {
+        lastPlacedOrderItems.forEach(item => {
+          const mockProduct = savedMocks.find(p => p.id === item.productId);
+          if (mockProduct) {
+            mockProduct.stock = (mockProduct.stock || 0) + item.qty;
+            if (item.variant && item.variant.size && mockProduct.sizesStock) {
+              const size = item.variant.size;
+              mockProduct.sizesStock[size] = (mockProduct.sizesStock[size] || 0) + item.qty;
+            }
+          }
+        });
+        localStorage.setItem("boutique_mock_products", JSON.stringify(savedMocks));
+      }
+
+      // If in mock mode, also update the order status in mock orders list
+      let savedOrders = JSON.parse(localStorage.getItem("boutique_mock_orders") || "null");
+      if (savedOrders) {
+        const mockOrder = savedOrders.find(o => o.id === lastPlacedOrderId);
+        if (mockOrder) {
+          mockOrder.status = "cancelled";
+          localStorage.setItem("boutique_mock_orders", JSON.stringify(savedOrders));
+        }
+      }
+
+      // Set up the WhatsApp cancel notice link dynamically
+      setupCancelWhatsAppLink();
+
+      // Show cancel success view
+      showCancelledState();
+    }
+
+    function showCancelledState() {
+      // Change status headers
+      document.getElementById("success-icon").className = "fas fa-circle-xmark";
+      document.getElementById("success-icon").style.color = "#A34E4E";
+      document.getElementById("success-title").textContent = "Order Cancelled";
+      document.getElementById("success-title").style.color = "#A34E4E";
+      
+      // Toggle card displays
+      document.getElementById("confirm-options-card").style.display = "none";
+      document.getElementById("cancel-options-card").style.display = "block";
+      
+      window.scrollTo(0, 0);
+    }
+
+    function getOrderSummaryText() {
+      let message = `Hello, I would like to confirm my VibeBoutique order!\n\n`;
+      message += `Order ID: ${lastPlacedOrderId}\n\n`;
+      message += `Items:\n`;
+      lastPlacedOrderItems.forEach(item => {
+        const variantDesc = [item.variant?.size, item.variant?.color].filter(Boolean).join(" / ");
+        message += `- ${item.qty}x ${item.name} ${variantDesc ? `(${variantDesc})` : ''} - $${(item.price * item.qty).toFixed(2)}\n`;
+      });
+      message += `\nTotal: $${lastPlacedOrderTotal.toFixed(2)}\n\n`;
+      message += `Delivery Name: ${lastPlacedOrderCustomerName}`;
+      return message;
+    }
+
+    function getCancellationText() {
+      let message = `Hello, I would like to cancel my order from VibeBoutique.\n\n`;
+      message += `Order ID: ${lastPlacedOrderId}\n`;
+      message += `Customer Name: ${lastPlacedOrderCustomerName}\n`;
+      message += `Order Total: $${lastPlacedOrderTotal.toFixed(2)}`;
+      return message;
+    }
+
+    function getReorderText() {
+      let message = `Hello, I would like to place this order again via Instagram:\n\n`;
+      lastPlacedOrderItems.forEach(item => {
+        const variantDesc = [item.variant?.size, item.variant?.color].filter(Boolean).join(" / ");
+        message += `- ${item.qty}x ${item.name} ${variantDesc ? `(${variantDesc})` : ''} - $${(item.price * item.qty).toFixed(2)}\n`;
+      });
+      message += `\nTotal: $${lastPlacedOrderTotal.toFixed(2)}\n\n`;
+      message += `Delivery Name: ${lastPlacedOrderCustomerName}`;
+      return message;
+    }
+
+    function confirmOrderOnInstagram() {
+      const summary = getOrderSummaryText();
+      const message = "Order summary copied to clipboard!";
+      copyToClipboard(summary, message);
+      window.open(`https://instagram.com/${appSettings.instagramId || 'vibeboutique'}`, "_blank");
+    }
+
+    function notifyCancelOnInstagram() {
+      const cancellationText = getCancellationText();
+      const message = "Cancellation message copied to clipboard!";
+      copyToClipboard(cancellationText, message);
+      window.open(`https://instagram.com/${appSettings.instagramId || 'vibeboutique'}`, "_blank");
+    }
+
+    function reorderOnInstagram() {
+      const reorderText = getReorderText();
+      const message = "Reorder request copied to clipboard!";
+      copyToClipboard(reorderText, message);
+      
+      // Restore items to shopping cart first
+      restoreCartItems();
+      
+      window.open(`https://instagram.com/${appSettings.instagramId || 'vibeboutique'}`, "_blank");
+    }
+
+    function restoreCartItems() {
+      localStorage.setItem("boutique_cart", JSON.stringify(lastPlacedOrderItems));
+      updateCartBadge();
+    }
+
+    function copyToClipboard(text, successMessage) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          alert(successMessage + "\n\nWe are now redirecting you to Instagram to paste and send the message!");
+        }).catch(err => {
+          console.error("Clipboard copy failed: ", err);
+          fallbackCopyText(text);
+          alert(successMessage + "\n\nWe are now redirecting you to Instagram to paste and send the message!");
+        });
+      } else {
+        fallbackCopyText(text);
+        alert(successMessage + "\n\nWe are now redirecting you to Instagram to paste and send the message!");
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+      } catch (err) {
+        console.error('Fallback copy failed', err);
+      }
+      document.body.removeChild(textArea);
     }
   </script>
 </body>
