@@ -11,10 +11,16 @@ service cloud.firestore {
       );
     }
 
-    // Products: Anyone signed in can read, only admins can write
+    // Products: Anyone signed in can read.
+    // Admins can write anything. Regular signed-in users can only update stock and sizesStock
+    // during a purchase (decrementing inventory).
     match /products/{productId} {
       allow read: if request.auth != null;
-      allow write: if isAdmin();
+      allow write: if isAdmin() || (
+        request.auth != null &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock', 'sizesStock', 'updatedAt']) &&
+        request.resource.data.stock < resource.data.stock
+      );
     }
 
     // Orders: Any signed-in user can create (place an order),

@@ -107,7 +107,7 @@
   <!-- Scripts -->
   <script type="module" src="js/main.js"></script>
   <script type="module">
-    import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { collection, addDoc, serverTimestamp, doc, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { db, isConfigured } from "./js/firebase-config.js";
     import { appSettings } from "./js/main.js";
     import { updateCartBadge } from "./js/main.js";
@@ -207,11 +207,82 @@
       // 1. Submit to Firestore if configured
       if (isConfigured) {
         try {
+          // Decrement stocks first in a transaction to ensure stock is available and updated atomically
+          await runTransaction(db, async (transaction) => {
+            const productDocs = [];
+            
+            // First read all products in the transaction (reads must happen before writes)
+            for (const item of cart) {
+              const productRef = doc(db, "products", item.productId);
+              const productSnap = await transaction.get(productRef);
+              if (!productSnap.exists()) {
+                throw new Error(`Product ${item.name} not found!`);
+              }
+              productDocs.push({ ref: productRef, snap: productSnap, item });
+            }
+
+            // Perform checks and prepare writes
+            for (const { ref, snap, item } of productDocs) {
+              const productData = snap.data();
+              const currentStock = productData.stock || 0;
+              const buyQty = item.qty;
+
+              // If size-specific stock tracking is active
+              if (item.variant && item.variant.size && productData.sizesStock) {
+                const size = item.variant.size;
+                const sizeStock = productData.sizesStock[size] || 0;
+                if (sizeStock < buyQty) {
+                  throw new Error(`Insufficient stock for size ${size} of ${item.name}!`);
+                }
+                
+                const newSizesStock = { ...productData.sizesStock };
+                newSizesStock[size] = sizeStock - buyQty;
+                
+                transaction.update(ref, {
+                  stock: currentStock - buyQty,
+                  sizesStock: newSizesStock,
+                  updatedAt: serverTimestamp()
+                });
+              } else {
+                // Global stock fallback
+                if (currentStock < buyQty) {
+                  throw new Error(`Insufficient stock for ${item.name}!`);
+                }
+                transaction.update(ref, {
+                  stock: currentStock - buyQty,
+                  updatedAt: serverTimestamp()
+                });
+              }
+            }
+          });
+
+          // Add the order document
           const docRef = await addDoc(collection(db, "orders"), orderData);
           orderId = docRef.id;
         } catch (error) {
-          console.error("Firestore order write failed, continuing with mock ID: ", error);
-          alert("We encountered an error saving your order to the database. You can still confirm via WhatsApp!");
+          console.error("Firestore checkout transaction failed: ", error);
+          alert("Checkout failed: " + error.message);
+          if (submitBtn) {
+            submitBtn.textContent = "Place Order & Confirm";
+            submitBtn.disabled = false;
+          }
+          return;
+        }
+      } else {
+        // Mock Save Mode: decrement mock products stock in localStorage
+        let savedMocks = JSON.parse(localStorage.getItem("boutique_mock_products") || "null");
+        if (savedMocks) {
+          cart.forEach(item => {
+            const mockProduct = savedMocks.find(p => p.id === item.productId);
+            if (mockProduct) {
+              mockProduct.stock = Math.max(0, (mockProduct.stock || 0) - item.qty);
+              if (item.variant && item.variant.size && mockProduct.sizesStock) {
+                const size = item.variant.size;
+                mockProduct.sizesStock[size] = Math.max(0, (mockProduct.sizesStock[size] || 0) - item.qty);
+              }
+            }
+          });
+          localStorage.setItem("boutique_mock_products", JSON.stringify(savedMocks));
         }
       }
 

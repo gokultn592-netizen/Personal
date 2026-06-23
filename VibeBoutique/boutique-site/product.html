@@ -100,9 +100,12 @@
       container.innerHTML = `
         <div class="product-detail-layout">
           <!-- Gallery -->
-          <div class="product-detail-gallery">
-            <div class="main-image-container">
+          <div class="product-detail-gallery" style="position: relative;">
+            <div class="main-image-container" style="position: relative;">
               <img id="detail-main-img" src="${activeProduct.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop'}" alt="${activeProduct.name}">
+              <div id="sold-out-overlay" style="display: none; position: absolute; inset: 0; background: rgba(28, 28, 28, 0.4); backdrop-filter: blur(3px); align-items: center; justify-content: center; color: white; font-family: var(--font-heading); font-size: 1.8rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; border-radius: var(--radius-sm); pointer-events: none; z-index: 5;">
+                <span style="border: 2px solid white; padding: 0.5rem 1.5rem; background: rgba(0,0,0,0.65);">Sold Out</span>
+              </div>
             </div>
           </div>
 
@@ -152,6 +155,9 @@
                 <button id="add-to-cart-btn" class="btn btn-primary" style="width: 100%;">
                   Add To Cart
                 </button>
+                <div id="sorry-stock-message" style="display: none; background-color: #FDF2F2; border: 1px solid #F8B4B4; color: #A34E4E; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; margin-top: var(--spacing-sm); text-align: center;">
+                  We are terribly sorry, but this item is currently out of stock in your selected size.
+                </div>
               </div>
             </div>
           </div>
@@ -179,8 +185,20 @@
       const availabilityEl = document.getElementById("availability-text");
       if (availabilityEl) {
         availabilityEl.innerHTML = outOfStockForSize 
-          ? '<span style="color:#A34E4E; font-weight:600;">Sold Out in this size</span>' 
+          ? '<span style="color:#A34E4E; font-weight:600;">Sold Out</span>' 
           : `${currentStock} items available`;
+      }
+
+      // Update image sold-out overlay
+      const soldOutOverlay = document.getElementById("sold-out-overlay");
+      if (soldOutOverlay) {
+        soldOutOverlay.style.display = outOfStockForSize ? "flex" : "none";
+      }
+
+      // Update sorry message warning
+      const sorryMsg = document.getElementById("sorry-stock-message");
+      if (sorryMsg) {
+        sorryMsg.style.display = outOfStockForSize ? "block" : "none";
       }
 
       // Update add to cart button
