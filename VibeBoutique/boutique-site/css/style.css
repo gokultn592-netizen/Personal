@@ -1117,3 +1117,35 @@ footer {
   .hero-title { font-size: 2.2rem; }
   .section-title { font-size: 2rem; }
 }
+
+/* --- SOLD OUT RIBBON --- */
+.ribbon-wrapper {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 90px;
+  height: 90px;
+  overflow: hidden;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.ribbon-sold-out {
+  position: absolute;
+  top: 18px;
+  right: -30px;
+  width: 130px;
+  background: linear-gradient(135deg, #A34E4E 0%, #8C3E3E 100%);
+  color: #FFFFFF;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 6px 0;
+  transform: rotate(45deg);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+

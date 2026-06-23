@@ -103,8 +103,9 @@
           <div class="product-detail-gallery" style="position: relative;">
             <div class="main-image-container" style="position: relative;">
               <img id="detail-main-img" src="${activeProduct.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop'}" alt="${activeProduct.name}">
-              <div id="sold-out-overlay" style="display: none; position: absolute; inset: 0; background: rgba(28, 28, 28, 0.4); backdrop-filter: blur(3px); align-items: center; justify-content: center; color: white; font-family: var(--font-heading); font-size: 1.8rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; border-radius: var(--radius-sm); pointer-events: none; z-index: 5;">
-                <span style="border: 2px solid white; padding: 0.5rem 1.5rem; background: rgba(0,0,0,0.65);">Sold Out</span>
+              <div id="sold-out-overlay" style="display: none; position: absolute; inset: 0; background: rgba(28, 28, 28, 0.25); backdrop-filter: blur(2px); border-radius: var(--radius-sm); pointer-events: none; z-index: 5;"></div>
+              <div id="detail-sold-out-ribbon" class="ribbon-wrapper" style="display: none;">
+                <div class="ribbon-sold-out">Sold Out</div>
               </div>
             </div>
           </div>
@@ -192,7 +193,13 @@
       // Update image sold-out overlay
       const soldOutOverlay = document.getElementById("sold-out-overlay");
       if (soldOutOverlay) {
-        soldOutOverlay.style.display = outOfStockForSize ? "flex" : "none";
+        soldOutOverlay.style.display = outOfStockForSize ? "block" : "none";
+      }
+
+      // Update image sold-out ribbon
+      const soldOutRibbon = document.getElementById("detail-sold-out-ribbon");
+      if (soldOutRibbon) {
+        soldOutRibbon.style.display = outOfStockForSize ? "block" : "none";
       }
 
       // Update sorry message warning

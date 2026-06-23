@@ -482,9 +482,29 @@
             <td><span class="product-category" style="font-size:0.85rem;">${prod.category || 'Garments'}</span></td>
             <td style="font-family: var(--font-heading); font-weight:600;">$${Number(prod.price).toFixed(2)}</td>
             <td>
-              <span style="font-weight: 500; color: ${prod.stock <= 0 ? '#A34E4E' : 'inherit'}">
-                ${prod.stock <= 0 ? 'Out of Stock' : `${prod.stock} Units`}
-              </span>
+              ${(() => {
+                if (prod.sizesStock && Object.keys(prod.sizesStock).length > 0) {
+                  const sizeBreakdown = Object.entries(prod.sizesStock)
+                    .map(([size, val]) => {
+                      const color = val === 0 ? '#A34E4E' : (val <= 3 ? '#C5A880' : 'inherit');
+                      const weight = val === 0 ? '600' : '400';
+                      return `<span style="color: ${color}; font-weight: ${weight};" title="${size} Stock">${size}: ${val}</span>`;
+                    })
+                    .join(" | ");
+                  return `
+                    <div style="font-size: 0.85rem; font-family: var(--font-body); font-weight: 500; margin-bottom: 2px; white-space: nowrap;">
+                      ${sizeBreakdown}
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Total: ${prod.stock} Units</div>
+                  `;
+                } else {
+                  return `
+                    <span style="font-weight: 500; color: ${prod.stock <= 0 ? '#A34E4E' : (prod.stock <= 3 ? '#C5A880' : 'inherit')}">
+                      ${prod.stock <= 0 ? 'Out of Stock' : `${prod.stock} Units`}
+                    </span>
+                  `;
+                }
+              })()}
             </td>
             <td>
               <span class="status-badge ${prod.featured ? 'confirmed' : 'pending'}" style="font-size:0.7rem;">

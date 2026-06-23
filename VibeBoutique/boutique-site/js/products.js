@@ -286,7 +286,7 @@ function renderProducts() {
         <a href="product.html?id=${product.id}" class="product-image-wrapper">
           <img class="product-img" src="${product.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop'}" alt="${product.name}" loading="lazy">
           ${product.featured ? '<span class="product-badge featured">Featured</span>' : ''}
-          ${outOfStock ? '<span class="product-badge" style="background-color: #8C3E3E; color: white; top: auto; bottom: 12px;">Sold Out</span>' : ''}
+          ${outOfStock ? '<div class="ribbon-wrapper"><div class="ribbon-sold-out">Sold Out</div></div>' : ''}
         </a>
         <div class="product-info">
           <span class="product-category">${product.category || 'Garments'}</span>
