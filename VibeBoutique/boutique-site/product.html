@@ -57,6 +57,18 @@
       await loadProductDetails(productId, container);
     });
 
+    window.addEventListener("pageshow", async (event) => {
+      if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+        const container = document.getElementById("product-detail-container");
+        const params = new URLSearchParams(window.location.search);
+        const productId = params.get("id");
+        if (container && productId) {
+          console.log("Product details pageshow back-navigation. Reloading details...");
+          await loadProductDetails(productId, container);
+        }
+      }
+    });
+
     async function loadProductDetails(id, container) {
       // 1. Fetch data
       if (isConfigured) {
@@ -73,7 +85,8 @@
 
       // 2. Try mock fallback if not found in Firestore
       if (!activeProduct) {
-        activeProduct = mockProducts.find(p => p.id === id);
+        const savedProducts = JSON.parse(localStorage.getItem("boutique_mock_products") || "[]");
+        activeProduct = savedProducts.find(p => p.id === id) || mockProducts.find(p => p.id === id);
       }
 
       // 3. Not found anywhere check

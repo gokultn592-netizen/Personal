@@ -128,8 +128,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 // Load catalog products
 async function loadProducts() {
   if (!isConfigured) {
-    console.log("Using mock products data.");
-    allProducts = [...mockProducts];
+    console.log("Using mock products data from localStorage.");
+    let savedProducts = JSON.parse(localStorage.getItem("boutique_mock_products") || "null");
+    if (!savedProducts) {
+      savedProducts = [...mockProducts];
+      localStorage.setItem("boutique_mock_products", JSON.stringify(savedProducts));
+    }
+    allProducts = savedProducts;
     return;
   }
 
@@ -138,8 +143,13 @@ async function loadProducts() {
     const querySnapshot = await getDocs(q);
     
     if (querySnapshot.empty) {
-      console.log("Firestore products collection is empty. Using mock data.");
-      allProducts = [...mockProducts];
+      console.log("Firestore products collection is empty. Using mock data from localStorage.");
+      let savedProducts = JSON.parse(localStorage.getItem("boutique_mock_products") || "null");
+      if (!savedProducts) {
+        savedProducts = [...mockProducts];
+        localStorage.setItem("boutique_mock_products", JSON.stringify(savedProducts));
+      }
+      allProducts = savedProducts;
     } else {
       allProducts = [];
       querySnapshot.forEach(doc => {
@@ -151,7 +161,12 @@ async function loadProducts() {
     }
   } catch (error) {
     console.error("Error loading products from Firestore: ", error);
-    allProducts = [...mockProducts];
+    let savedProducts = JSON.parse(localStorage.getItem("boutique_mock_products") || "null");
+    if (!savedProducts) {
+      savedProducts = [...mockProducts];
+      localStorage.setItem("boutique_mock_products", JSON.stringify(savedProducts));
+    }
+    allProducts = savedProducts;
   }
 }
 
@@ -298,4 +313,14 @@ function renderProducts() {
   });
   grid.innerHTML = html;
 }
+
+// BFCache / History Navigation Back Reload
+window.addEventListener("pageshow", async (event) => {
+  if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+    console.log("Pageshow back-navigation detected. Reloading products...");
+    await loadProducts();
+    renderProducts();
+  }
+});
+
 export { allProducts, mockProducts };

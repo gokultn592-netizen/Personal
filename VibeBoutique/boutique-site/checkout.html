@@ -207,16 +207,23 @@
       // 1. Submit to Firestore if configured
       if (isConfigured) {
         try {
+          const mockItemsToUpdate = [];
+          
           // Decrement stocks first in a transaction to ensure stock is available and updated atomically
           await runTransaction(db, async (transaction) => {
             const productDocs = [];
             
             // First read all products in the transaction (reads must happen before writes)
             for (const item of cart) {
+              if (item.productId.startsWith("mock") || item.productId.startsWith("MOCK")) {
+                if (!mockItemsToUpdate.includes(item)) mockItemsToUpdate.push(item);
+                continue;
+              }
               const productRef = doc(db, "products", item.productId);
               const productSnap = await transaction.get(productRef);
               if (!productSnap.exists()) {
-                throw new Error(`Product ${item.name} not found!`);
+                if (!mockItemsToUpdate.includes(item)) mockItemsToUpdate.push(item);
+                continue;
               }
               productDocs.push({ ref: productRef, snap: productSnap, item });
             }
@@ -255,6 +262,24 @@
               }
             }
           });
+
+          // After transaction completes, update mock items in localStorage if any
+          if (mockItemsToUpdate.length > 0) {
+            let savedMocks = JSON.parse(localStorage.getItem("boutique_mock_products") || "null");
+            if (savedMocks) {
+              mockItemsToUpdate.forEach(item => {
+                const mockProduct = savedMocks.find(p => p.id === item.productId);
+                if (mockProduct) {
+                  mockProduct.stock = Math.max(0, (mockProduct.stock || 0) - item.qty);
+                  if (item.variant && item.variant.size && mockProduct.sizesStock) {
+                    const size = item.variant.size;
+                    mockProduct.sizesStock[size] = Math.max(0, (mockProduct.sizesStock[size] || 0) - item.qty);
+                  }
+                }
+              });
+              localStorage.setItem("boutique_mock_products", JSON.stringify(savedMocks));
+            }
+          }
 
           // Add the order document
           const docRef = await addDoc(collection(db, "orders"), orderData);
