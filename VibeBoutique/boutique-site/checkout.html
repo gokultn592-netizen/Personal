@@ -637,14 +637,14 @@
       const summary = getOrderSummaryText();
       const message = "Order summary copied to clipboard!";
       copyToClipboard(summary, message);
-      window.open(`https://instagram.com/${appSettings.instagramId || 'vibeboutique'}`, "_blank");
+      window.open(`https://ig.me/m/${appSettings.instagramId || 'vibeboutique'}`, "_blank");
     }
 
     function notifyCancelOnInstagram() {
       const cancellationText = getCancellationText();
       const message = "Cancellation message copied to clipboard!";
       copyToClipboard(cancellationText, message);
-      window.open(`https://instagram.com/${appSettings.instagramId || 'vibeboutique'}`, "_blank");
+      window.open(`https://ig.me/m/${appSettings.instagramId || 'vibeboutique'}`, "_blank");
     }
 
     function reorderOnInstagram() {
@@ -655,7 +655,7 @@
       // Restore items to shopping cart first
       restoreCartItems();
       
-      window.open(`https://instagram.com/${appSettings.instagramId || 'vibeboutique'}`, "_blank");
+      window.open(`https://ig.me/m/${appSettings.instagramId || 'vibeboutique'}`, "_blank");
     }
 
     function restoreCartItems() {
