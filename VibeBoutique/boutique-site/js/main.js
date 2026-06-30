@@ -5,8 +5,9 @@ import { waitForAuthState, resolveRole, signInWithGoogle, signOutUser } from "./
 // Global state
 let appSettings = {
   whatsappNumber: "1234567890",
-  shopName: "VibeBoutique",
-  instagramId: "vibeboutique"
+  shopName: "Joe Boutique",
+  instagramId: "vibeboutique",
+  upiId: "vibe.boutique@okaxis"
 };
 
 // Shared auth state — set once, used everywhere on the page
@@ -47,6 +48,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (data.whatsappNumber) appSettings.whatsappNumber = data.whatsappNumber.replace(/[\s\-\+\(\)]/g, "");
         if (data.shopName) appSettings.shopName = data.shopName;
         if (data.instagramId) appSettings.instagramId = data.instagramId.trim().replace(/@/g, "");
+        if (data.upiId) appSettings.upiId = data.upiId.trim();
         window.dispatchEvent(new CustomEvent("settingsLoaded", { detail: appSettings }));
       }
     } catch (e) {
@@ -61,6 +63,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (data.whatsappNumber) appSettings.whatsappNumber = data.whatsappNumber.replace(/[\s\-\+\(\)]/g, "");
         if (data.shopName) appSettings.shopName = data.shopName;
         if (data.instagramId) appSettings.instagramId = data.instagramId.trim().replace(/@/g, "");
+        if (data.upiId) appSettings.upiId = data.upiId.trim();
         window.dispatchEvent(new CustomEvent("settingsLoaded", { detail: appSettings }));
       } catch (e) {}
     }
@@ -109,7 +112,7 @@ function showSignInOverlay() {
         letter-spacing: 0.05em;
         margin-bottom: 0.25rem;
       ">
-        VIBE<span style="color: #C5A880;">BOUTIQUE</span>
+        JOE<span style="color: #C5A880;">BOUTIQUE</span>
       </div>
 
       <p style="color: #6B6860; font-size: 0.9rem; margin-bottom: 2.5rem; letter-spacing: 0.05em;">
@@ -272,7 +275,7 @@ function renderHeader() {
 
   header.innerHTML = `
     <div class="container navbar">
-      <a href="${base}index.html" class="nav-brand">VIBE<span>BOUTIQUE</span></a>
+      <a href="${base}index.html" class="nav-brand">JOE<span>BOUTIQUE</span></a>
       <nav>
         <ul class="nav-links">
           <li><a href="${base}index.html" class="${(path.endsWith("index.html") || path.endsWith("/")) ? "active" : ""}">Home</a></li>
@@ -377,7 +380,7 @@ function renderFooter() {
     <div class="container">
       <div class="footer-grid">
         <div class="footer-col">
-          <div class="footer-brand">VIBE<span>BOUTIQUE</span></div>
+          <div class="footer-brand">JOE<span>BOUTIQUE</span></div>
           <p class="text-muted" style="font-size:0.9rem; margin-top:0.5rem; max-width:300px;">
             A curated collection of premium garments and accessories for the contemporary wardrobe.
           </p>

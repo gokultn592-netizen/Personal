@@ -9,6 +9,9 @@
 </head>
 <body>
 
+  <!-- Toast Notification Container -->
+  <div id="admin-toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 350px; width: 90%;"></div>
+
   <!-- Injected by main.js -->
   <header></header>
 
@@ -104,7 +107,7 @@
             
             <div class="form-group">
               <label for="settings-shop-name">Store Name (Read-Only)</label>
-              <input type="text" id="settings-shop-name" class="form-input" placeholder="e.g. VibeBoutique" readonly style="background-color: var(--bg-secondary); cursor: not-allowed; border-color: var(--border-color); color: var(--text-muted);">
+              <input type="text" id="settings-shop-name" class="form-input" placeholder="e.g. Joe Boutique" readonly style="background-color: var(--bg-secondary); cursor: not-allowed; border-color: var(--border-color); color: var(--text-muted);">
             </div>
             
             <div class="form-group">
@@ -117,6 +120,12 @@
               <label for="settings-instagram-id">Instagram Username *</label>
               <input type="text" id="settings-instagram-id" class="form-input" placeholder="e.g. vibeboutique" required>
               <span class="text-muted" style="font-size: 0.75rem;">Enter your Instagram account username (without the '@' sign). Customers will be redirected to your page.</span>
+            </div>
+
+            <div class="form-group" style="margin-top: var(--spacing-sm);">
+              <label for="settings-upi-id">Merchant UPI ID *</label>
+              <input type="text" id="settings-upi-id" class="form-input" placeholder="e.g. yourname@okaxis" required>
+              <span class="text-muted" style="font-size: 0.75rem;">Enter the UPI ID (VPA) where customers should send payments (e.g., storename@okicici).</span>
             </div>
 
             <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">
@@ -135,7 +144,7 @@
   <!-- Scripts -->
   <script type="module" src="../js/main.js"></script>
   <script type="module">
-    import { collection, getDocs, doc, getDoc, setDoc, deleteDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { collection, getDocs, doc, getDoc, setDoc, deleteDoc, updateDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { db, isConfigured } from "../js/firebase-config.js";
     import { requireAdmin, signOutUser } from "../js/auth.js";
     import { mockProducts } from "../js/products.js";
@@ -146,9 +155,10 @@
 
     // Default mock settings
     const defaultSettings = {
-      shopName: "VibeBoutique",
+      shopName: "Joe Boutique",
       whatsappNumber: "1234567890",
-      instagramId: "vibeboutique"
+      instagramId: "vibeboutique",
+      upiId: "vibe.boutique@okaxis"
     };
 
     document.addEventListener("DOMContentLoaded", async () => {
@@ -205,22 +215,145 @@
       // Fetch settings
       await loadStoreSettings();
 
-      // Fetch products and orders
+      // Fetch products
       if (isConfigured) {
-        await loadRealFirebaseData();
+        await loadRealFirebaseProducts();
       } else {
-        await loadMockStorageData();
+        await loadMockProducts();
       }
 
-      // Render tab tables
-      renderOrdersTable();
+      // Initialize real-time orders
+      initRealTimeOrders();
+
+      // Render products table
       renderProductsTable();
+    }
+
+    async function loadRealFirebaseProducts() {
+      try {
+        const prodSnap = await getDocs(query(collection(db, "products")));
+        productsList = [];
+        prodSnap.forEach(doc => {
+          productsList.push({ id: doc.id, ...doc.data() });
+        });
+      } catch (error) {
+        console.error("Error fetching Firebase products: ", error);
+        await loadMockProducts();
+      }
+    }
+
+    async function loadMockProducts() {
+      let savedProducts = JSON.parse(localStorage.getItem("boutique_mock_products") || "null");
+      if (!savedProducts) {
+        savedProducts = [...mockProducts];
+        localStorage.setItem("boutique_mock_products", JSON.stringify(savedProducts));
+      }
+      productsList = savedProducts;
+    }
+
+    let isInitialLoad = true;
+
+    function initRealTimeOrders() {
+      if (isConfigured) {
+        const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+        onSnapshot(q, (snapshot) => {
+          const updatedOrders = [];
+          const newOrders = [];
+
+          snapshot.docChanges().forEach(change => {
+            const data = change.doc.data();
+            const id = change.doc.id;
+            const ord = { id, ...data };
+
+            if (change.type === "added") {
+              if (!isInitialLoad) {
+                newOrders.push(ord);
+              }
+            }
+          });
+
+          snapshot.forEach(doc => {
+            updatedOrders.push({ id: doc.id, ...doc.data() });
+          });
+
+          ordersList = updatedOrders;
+          renderOrdersTable();
+
+          newOrders.forEach(order => {
+            triggerOrderNotification(order);
+          });
+
+          isInitialLoad = false;
+        }, (error) => {
+          console.error("Firestore onSnapshot subscription failed:", error);
+        });
+      } else {
+        // Seed mock orders if empty
+        let savedOrders = JSON.parse(localStorage.getItem("boutique_mock_orders") || "null");
+        if (!savedOrders) {
+          savedOrders = [
+            {
+              id: "MOCK-ORD-74A",
+              customerName: "Alice Wonderland",
+              phone: "+91 98765 43210",
+              address: "777 Cheshire Lane, Forest Hill",
+              notes: "Call when outside please.",
+              items: [
+                { productId: "mock1", name: "Linen Gold Trim Kimono", price: 180, qty: 1, variant: { size: "M", color: "Ivory" } },
+                { productId: "mock3", name: "Ribbed Merino Knit Dress", price: 195, qty: 2, variant: { size: "S", color: "Charcoal Gray" } }
+              ],
+              total: 570.00,
+              status: "pending",
+              paymentMethod: "chat",
+              createdAt: { seconds: Date.now() / 1000 - 3600 * 2 } // 2 hours ago
+            },
+            {
+              id: "MOCK-ORD-12C",
+              customerName: "Bob Smith",
+              phone: "+91 99988 77766",
+              address: "42 Wallaby Way, Sydney",
+              notes: "",
+              items: [
+                { productId: "mock2", name: "Velvet Double-Breasted Blazer", price: 240, qty: 1, variant: { size: "L", color: "Midnight Blue" } }
+              ],
+              total: 240.00,
+              status: "shipped",
+              paymentMethod: "upi",
+              upiUtr: "123456789012",
+              createdAt: { seconds: Date.now() / 1000 - 86400 * 1.5 } // 1.5 days ago
+            }
+          ];
+          localStorage.setItem("boutique_mock_orders", JSON.stringify(savedOrders));
+        }
+
+        ordersList = savedOrders;
+        renderOrdersTable();
+
+        // Poll mock orders every 3 seconds for local storage mock demo mode
+        let lastCount = savedOrders.length;
+        setInterval(() => {
+          const currentMockOrders = JSON.parse(localStorage.getItem("boutique_mock_orders") || "[]");
+          if (currentMockOrders.length > lastCount) {
+            const diffCount = currentMockOrders.length - lastCount;
+            const newOrdersList = currentMockOrders.slice(0, diffCount);
+
+            ordersList = currentMockOrders;
+            renderOrdersTable();
+
+            newOrdersList.forEach(order => {
+              triggerOrderNotification(order);
+            });
+          }
+          lastCount = currentMockOrders.length;
+        }, 3000);
+      }
     }
 
     async function loadStoreSettings() {
       const shopNameInput = document.getElementById("settings-shop-name");
       const waNumberInput = document.getElementById("settings-wa-number");
       const igIdInput = document.getElementById("settings-instagram-id");
+      const upiIdInput = document.getElementById("settings-upi-id");
 
       if (isConfigured) {
         try {
@@ -230,6 +363,7 @@
             if (shopNameInput) shopNameInput.value = data.shopName || defaultSettings.shopName;
             if (waNumberInput) waNumberInput.value = data.whatsappNumber || defaultSettings.whatsappNumber;
             if (igIdInput) igIdInput.value = data.instagramId || defaultSettings.instagramId;
+            if (upiIdInput) upiIdInput.value = data.upiId || defaultSettings.upiId;
             return;
           }
         } catch (e) {
@@ -243,6 +377,7 @@
       if (shopNameInput) shopNameInput.value = activeSettings.shopName;
       if (waNumberInput) waNumberInput.value = activeSettings.whatsappNumber;
       if (igIdInput) igIdInput.value = activeSettings.instagramId || defaultSettings.instagramId;
+      if (upiIdInput) upiIdInput.value = activeSettings.upiId || defaultSettings.upiId;
     }
 
     async function handleSettingsSave(e) {
@@ -250,12 +385,13 @@
       const shopName = document.getElementById("settings-shop-name").value.trim();
       const whatsappNumber = document.getElementById("settings-wa-number").value.trim().replace(/[\s\-\+\(\)]/g, "");
       const instagramId = document.getElementById("settings-instagram-id").value.trim().replace(/@/g, "");
+      const upiId = document.getElementById("settings-upi-id").value.trim();
 
       const alertBanner = document.getElementById("settings-success-alert");
 
       if (isConfigured) {
         try {
-          await setDoc(doc(db, "settings", "general"), { shopName, whatsappNumber, instagramId });
+          await setDoc(doc(db, "settings", "general"), { shopName, whatsappNumber, instagramId, upiId });
           if (alertBanner) {
             alertBanner.style.display = "block";
             setTimeout(() => alertBanner.style.display = "none", 3000);
@@ -268,80 +404,11 @@
       }
 
       // Mock setting save
-      localStorage.setItem("boutique_mock_settings", JSON.stringify({ shopName, whatsappNumber, instagramId }));
+      localStorage.setItem("boutique_mock_settings", JSON.stringify({ shopName, whatsappNumber, instagramId, upiId }));
       if (alertBanner) {
         alertBanner.style.display = "block";
         setTimeout(() => alertBanner.style.display = "none", 3000);
       }
-    }
-
-    async function loadRealFirebaseData() {
-      try {
-        // Fetch products
-        const prodSnap = await getDocs(query(collection(db, "products")));
-        productsList = [];
-        prodSnap.forEach(doc => {
-          productsList.push({ id: doc.id, ...doc.data() });
-        });
-
-        // Fetch orders sorted by createdAt desc
-        const ordSnap = await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc")));
-        ordersList = [];
-        ordSnap.forEach(doc => {
-          ordersList.push({ id: doc.id, ...doc.data() });
-        });
-      } catch (error) {
-        console.error("Error fetching Firebase records: ", error);
-        alert("Firestore read error. Falling back to browser session memory.");
-        await loadMockStorageData();
-      }
-    }
-
-    async function loadMockStorageData() {
-      // Products
-      let savedProducts = JSON.parse(localStorage.getItem("boutique_mock_products") || "null");
-      if (!savedProducts) {
-        savedProducts = [...mockProducts];
-        localStorage.setItem("boutique_mock_products", JSON.stringify(savedProducts));
-      }
-      productsList = savedProducts;
-
-      // Orders
-      let savedOrders = JSON.parse(localStorage.getItem("boutique_mock_orders") || "null");
-      if (!savedOrders) {
-        // Seed initial order for demonstration
-        savedOrders = [
-          {
-            id: "MOCK-ORD-74A",
-            customerName: "Alice Wonderland",
-            phone: "+1 555-0199",
-            address: "777 Cheshire Lane, Forest Hill",
-            notes: "Call when outside please.",
-            items: [
-              { productId: "mock1", name: "Linen Gold Trim Kimono", price: 180, qty: 1, variant: { size: "M", color: "Ivory" } },
-              { productId: "mock3", name: "Ribbed Merino Knit Dress", price: 195, qty: 2, variant: { size: "S", color: "Charcoal Gray" } }
-            ],
-            total: 570.00,
-            status: "pending",
-            createdAt: { seconds: Date.now() / 1000 - 3600 * 2 } // 2 hours ago
-          },
-          {
-            id: "MOCK-ORD-12C",
-            customerName: "Bob Smith",
-            phone: "+1 555-0233",
-            address: "42 Wallaby Way, Sydney",
-            notes: "",
-            items: [
-              { productId: "mock2", name: "Velvet Double-Breasted Blazer", price: 240, qty: 1, variant: { size: "L", color: "Midnight Blue" } }
-            ],
-            total: 240.00,
-            status: "shipped",
-            createdAt: { seconds: Date.now() / 1000 - 86400 * 1.5 } // 1.5 days ago
-          }
-        ];
-        localStorage.setItem("boutique_mock_orders", JSON.stringify(savedOrders));
-      }
-      ordersList = savedOrders;
     }
 
     // Render Orders
@@ -381,18 +448,31 @@
         `;
 
         html += `
-          <tr>
+          <tr id="order-row-${order.id}">
             <td><strong>#${order.id}</strong></td>
             <td style="font-size: 0.85rem;">${orderDate}</td>
             <td>${contactDetails}</td>
             <td style="font-size: 0.85rem; line-height:1.4;">${itemsSummary}</td>
-            <td style="font-family: var(--font-heading); font-weight:600;">$${order.total.toFixed(2)}</td>
+            <td style="font-family: var(--font-heading); font-weight:600; vertical-align: top;">
+              ₹${order.total.toFixed(2)}
+              ${order.paymentMethod === 'upi' ? `
+                <div style="font-size: 0.72rem; font-family: var(--font-body); font-weight: normal; margin-top: 4px; color: var(--accent-gold); white-space: nowrap;">
+                  <i class="fas fa-wallet"></i> UPI Payment
+                  ${order.upiUtr ? `<br><span style="color: var(--text-primary); font-family: monospace;">UTR: ${order.upiUtr}</span>` : '<br><span style="color: #A34E4E; font-weight: 600;">No UTR Yet</span>'}
+                </div>
+              ` : `
+                <div style="font-size: 0.72rem; font-family: var(--font-body); font-weight: normal; margin-top: 4px; color: var(--text-muted);">
+                  Chat & Pay
+                </div>
+              `}
+            </td>
             <td>
               <select class="form-input status-selector" data-id="${order.id}" data-index="${idx}" style="padding: 0.3rem; font-size: 0.85rem; width: auto; background-color: white;">
                 <option value="pending" ${order.status === "pending" ? "selected" : ""}>Pending</option>
                 <option value="confirmed" ${order.status === "confirmed" ? "selected" : ""}>Confirmed</option>
                 <option value="shipped" ${order.status === "shipped" ? "selected" : ""}>Shipped</option>
                 <option value="delivered" ${order.status === "delivered" ? "selected" : ""}>Delivered</option>
+                <option value="cancelled" ${order.status === "cancelled" ? "selected" : ""}>Cancelled</option>
               </select>
             </td>
             <td>
@@ -445,8 +525,8 @@
 
     function openCustomerChat(order) {
       const cleanPhone = order.phone.replace(/[\s\-\+\(\)]/g, "");
-      let message = `Hello ${order.customerName}, this is VibeBoutique. `;
-      message += `Regarding your order #${order.id} totaling $${order.total.toFixed(2)}: `;
+      let message = `Hello ${order.customerName}, this is Joe Boutique. `;
+      message += `Regarding your order #${order.id} totaling ₹${order.total.toFixed(2)}: `;
       message += `Your order status is currently: *${order.status.toUpperCase()}*.`;
       
       const encoded = encodeURIComponent(message);
@@ -480,7 +560,7 @@
             </td>
             <td><strong>${prod.name}</strong></td>
             <td><span class="product-category" style="font-size:0.85rem;">${prod.category || 'Garments'}</span></td>
-            <td style="font-family: var(--font-heading); font-weight:600;">$${Number(prod.price).toFixed(2)}</td>
+            <td style="font-family: var(--font-heading); font-weight:600;">₹${Number(prod.price).toFixed(2)}</td>
             <td>
               ${(() => {
                 if (prod.sizesStock && Object.keys(prod.sizesStock).length > 0) {
@@ -557,6 +637,116 @@
       productsList.splice(idx, 1);
       localStorage.setItem("boutique_mock_products", JSON.stringify(productsList));
       renderProductsTable();
+    }
+
+    function triggerOrderNotification(order) {
+      // 1. Play chime sound
+      playNotificationChime();
+
+      // 2. Show Toast Alert
+      const toastContainer = document.getElementById("admin-toast-container");
+      if (toastContainer) {
+        const toast = document.createElement("div");
+        toast.style.cssText = `
+          background-color: #1C1C1C;
+          color: #FAF9F6;
+          border-left: 4px solid var(--accent-gold);
+          padding: 1rem;
+          border-radius: var(--radius-sm);
+          box-shadow: var(--shadow-lg);
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+          opacity: 0;
+          transform: translateY(-10px);
+          transition: all 0.3s ease;
+          font-family: var(--font-body);
+        `;
+
+        let paymentDetail = order.paymentMethod === 'upi' 
+          ? `UPI (${order.upiUtr ? `UTR: ${order.upiUtr}` : 'UTR Pending'})`
+          : 'Chat & Pay';
+
+        toast.innerHTML = `
+          <div style="font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-bell" style="color: var(--accent-gold); animation: pulse 1s infinite;"></i> New Order Received!
+          </div>
+          <div style="font-size: 0.85rem; color: #FAF9F6;">
+            <strong>Order ID:</strong> #${order.id}
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">
+            Name: ${order.customerName} | Total: ₹${order.total.toFixed(2)}
+          </div>
+          <div style="font-size: 0.75rem; color: var(--accent-gold);">
+            Method: ${paymentDetail}
+          </div>
+        `;
+
+        toastContainer.appendChild(toast);
+
+        // Animate in
+        setTimeout(() => {
+          toast.style.opacity = "1";
+          toast.style.transform = "translateY(0)";
+        }, 50);
+
+        // Highlight table row if visible
+        setTimeout(() => {
+          const row = document.getElementById(`order-row-${order.id}`);
+          if (row) {
+            row.style.backgroundColor = "rgba(197, 168, 128, 0.25)";
+            row.style.transition = "background-color 2.0s ease";
+            setTimeout(() => {
+              row.style.backgroundColor = "transparent";
+            }, 3000);
+          }
+        }, 500);
+
+        // Remove after 6 seconds
+        setTimeout(() => {
+          toast.style.opacity = "0";
+          toast.style.transform = "translateY(-10px)";
+          setTimeout(() => {
+            toast.remove();
+          }, 300);
+        }, 6000);
+      }
+    }
+
+    function playNotificationChime() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        
+        // Tone 1
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = "sine";
+        osc1.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+        gain1.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start();
+        osc1.stop(ctx.currentTime + 0.3);
+        
+        // Tone 2
+        setTimeout(() => {
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = "sine";
+          osc2.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+          gain2.gain.setValueAtTime(0.08, ctx.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.start();
+          osc2.stop(ctx.currentTime + 0.4);
+        }, 120);
+      } catch (err) {
+        console.warn("AudioContext chime blocked by browser policies until user interacts", err);
+      }
     }
   </script>
 </body>

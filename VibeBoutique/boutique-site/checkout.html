@@ -6,6 +6,29 @@
   <title>VibeBoutique — Checkout</title>
   <meta name="description" content="Finalize your selection and confirm your delivery details. Submit details directly via WhatsApp.">
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #checkout-success-view, #checkout-success-view * {
+        visibility: visible;
+      }
+      #checkout-success-view {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+      }
+      #confirm-options-card, #cancel-options-card, #cancel-order-btn, #print-receipt-btn, p a, #upi-payment-card form, #upi-intent-link {
+        display: none !important;
+      }
+    }
+  </style>
 </head>
 <body>
 
@@ -45,6 +68,27 @@
                 <label for="cust-notes">Order Notes (Optional)</label>
                 <textarea id="cust-notes" class="form-input" rows="2" placeholder="Gate codes, delivery preferences..." style="resize: vertical; font-family: inherit;"></textarea>
               </div>
+
+              <!-- Payment Method Selection -->
+              <div class="form-group" style="margin-top: var(--spacing-md); margin-bottom: var(--spacing-md);">
+                <label style="font-weight: 600; margin-bottom: 0.5rem; display: block; font-family: var(--font-body);">Select Payment Method *</label>
+                <div class="payment-options-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                  <label class="payment-option-card" id="pay-card-chat" style="border: 2px solid var(--accent-gold); padding: 0.75rem; border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: flex-start; gap: 0.5rem; background-color: var(--bg-secondary);">
+                    <input type="radio" name="payment-method" value="chat" checked style="accent-color: var(--accent-gold); margin-top: 3px;">
+                    <div>
+                      <div style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary);">Chat & Pay</div>
+                      <div style="font-size: 0.75rem; color: var(--text-muted);">Confirm and pay manually via chat</div>
+                    </div>
+                  </label>
+                  <label class="payment-option-card" id="pay-card-upi" style="border: 1px solid var(--border-color); padding: 0.75rem; border-radius: var(--radius-md); cursor: pointer; display: flex; align-items: flex-start; gap: 0.5rem;">
+                    <input type="radio" name="payment-method" value="upi" style="accent-color: var(--accent-gold); margin-top: 3px;">
+                    <div>
+                      <div style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary);">Instant UPI</div>
+                      <div style="font-size: 0.75rem; color: var(--text-muted);">Generate scan QR / Pay using UPI Apps</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
               
               <button type="submit" id="submit-order-btn" class="btn btn-primary" style="width: 100%; margin-top: var(--spacing-sm);">
                 Place Order & Confirm
@@ -64,11 +108,11 @@
             <div style="margin-top: var(--spacing-md); display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: var(--spacing-sm);">
               <div class="summary-row">
                 <span class="text-muted">Subtotal</span>
-                <span id="checkout-subtotal">$0.00</span>
+                <span id="checkout-subtotal">₹0.00</span>
               </div>
               <div class="summary-row" style="font-weight: 600; font-size: 1.15rem; margin-top: 0.3rem;">
                 <span>Total Due</span>
-                <span id="checkout-total">$0.00</span>
+                <span id="checkout-total">₹0.00</span>
               </div>
             </div>
           </div>
@@ -83,11 +127,51 @@
           Your order has been recorded with ID: <strong id="success-order-id" style="color: var(--text-primary);">#XXXXX</strong>.
         </p>
         
+        <!-- UPI Payment Card (Visible only when paymentMethod is 'upi') -->
+        <div class="admin-card" id="upi-payment-card" style="display: none; background-color: var(--bg-secondary); border-color: var(--accent-gold-light); text-align: left; margin-bottom: var(--spacing-lg);">
+          <h3 style="margin-bottom: 0.5rem; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-heading);">
+            <i class="fas fa-wallet" style="color: var(--accent-gold);"></i> Pay Instantly via UPI
+          </h3>
+          <p class="text-muted" style="font-size: 0.9rem; margin-bottom: var(--spacing-md);">
+            Please scan the QR code using any UPI app (Google Pay, PhonePe, Paytm, BHIM) or click the button below to initiate the payment.
+          </p>
+          
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; margin: 1.5rem 0;">
+            <!-- UPI QR Code container -->
+            <div id="upi-qrcode-container" style="background-color: white; padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: inline-block;">
+              <div id="upi-qrcode"></div>
+            </div>
+            
+            <div style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary); font-family: var(--font-heading);">
+              Amount Due: <span id="upi-amount-val">₹0.00</span>
+            </div>
+            
+            <!-- Mobile UPI Button -->
+            <a id="upi-intent-link" href="#" class="btn btn-primary" style="display: none; gap: 0.5rem; align-items: center; justify-content: center; padding: 0.75rem 1.5rem; font-size: 0.95rem;">
+              <i class="fas fa-mobile-screen"></i> Pay with UPI App
+            </a>
+          </div>
+          
+          <div style="border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+            <h4 style="font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.5rem; font-family: var(--font-heading);">Verify Your Payment</h4>
+            <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 0.75rem;">
+              Once your payment is successful, please enter the 12-digit UPI UTR / Ref Number from your transaction details to verify.
+            </p>
+            <form id="upi-verification-form" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <input type="text" id="upi-utr-input" class="form-input" placeholder="Enter 12-digit UTR No. (e.g., 618402948102)" pattern="[0-9]{12}" title="Please enter exactly 12 digits" required style="flex: 1; min-width: 200px;">
+              <button type="submit" id="submit-utr-btn" class="btn btn-primary" style="padding: 0.5rem 1.5rem;">Verify UTR</button>
+            </form>
+            <div id="upi-verification-success" style="display: none; background-color: #DEF7EC; border: 1px solid #BCF0DA; color: #03543F; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; margin-top: var(--spacing-sm); text-align: center; font-weight: 500;">
+              <i class="fas fa-circle-check"></i> Payment details recorded! Proceed below to send confirmation to both Admin & User.
+            </div>
+          </div>
+        </div>
+
         <!-- Confirmation Options Card -->
         <div class="admin-card" id="confirm-options-card" style="background-color: var(--bg-secondary); border-color: var(--accent-gold-light); text-align: left; margin-bottom: var(--spacing-lg);">
           <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">Select Confirmation Channel</h3>
           <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 1rem;">
-            To complete payments and schedule delivery, click one of the channels below to confirm your order details with the boutique owner.
+            Click a channel below to confirm order details. Sending to WhatsApp/Instagram notifies the owner and records it in your chat.
           </p>
           
           <div style="display: flex; flex-direction: column; gap: 0.75rem;">
@@ -98,6 +182,10 @@
             <!-- Confirm via Instagram -->
             <button id="instagram-confirm-btn" class="btn btn-gold" style="width: 100%; display: flex; gap: 0.5rem; justify-content: center; align-items: center; border: 1px solid var(--accent-gold);">
               <i class="fab fa-instagram" style="font-size: 1.1rem;"></i> Confirm via Instagram
+            </button>
+            <!-- Print Order Receipt -->
+            <button id="print-receipt-btn" class="btn btn-secondary" style="width: 100%; display: flex; gap: 0.5rem; justify-content: center; align-items: center; border: 1px solid var(--border-color); background-color: white; color: var(--text-primary);">
+              <i class="fas fa-print"></i> Print / Save Receipt
             </button>
           </div>
           
@@ -163,6 +251,7 @@
     let lastPlacedOrderItems = [];
     let lastPlacedOrderCustomerName = "";
     let lastPlacedOrderTotal = 0;
+    let lastPlacedOrderPaymentMethod = "chat";
 
     document.addEventListener("DOMContentLoaded", () => {
       // 1. Read Cart data
@@ -185,6 +274,34 @@
       const form = document.getElementById("checkout-form");
       if (form) {
         form.addEventListener("submit", handleCheckoutSubmit);
+      }
+
+      // 4. Style toggles for Payment Option Selection
+      const radioChat = document.querySelector('input[value="chat"]');
+      const radioUpi = document.querySelector('input[value="upi"]');
+      const cardChat = document.getElementById("pay-card-chat");
+      const cardUpi = document.getElementById("pay-card-upi");
+      
+      if (radioChat && radioUpi && cardChat && cardUpi) {
+        radioChat.addEventListener("change", () => {
+          cardChat.style.borderColor = "var(--accent-gold)";
+          cardChat.style.borderWidth = "2px";
+          cardChat.style.backgroundColor = "var(--bg-secondary)";
+          
+          cardUpi.style.borderColor = "var(--border-color)";
+          cardUpi.style.borderWidth = "1px";
+          cardUpi.style.backgroundColor = "transparent";
+        });
+        
+        radioUpi.addEventListener("change", () => {
+          cardUpi.style.borderColor = "var(--accent-gold)";
+          cardUpi.style.borderWidth = "2px";
+          cardUpi.style.backgroundColor = "var(--bg-secondary)";
+          
+          cardChat.style.borderColor = "var(--border-color)";
+          cardChat.style.borderWidth = "1px";
+          cardChat.style.backgroundColor = "transparent";
+        });
       }
     });
 
@@ -209,14 +326,14 @@
               <strong>${item.name}</strong> ${variantDesc ? `<span class="text-muted" style="font-size:0.8rem;">(${variantDesc})</span>` : ''}
               <div class="text-muted" style="font-size: 0.8rem;">Qty: ${item.qty}</div>
             </div>
-            <span style="font-weight: 500;">$${itemTotal.toFixed(2)}</span>
+            <span style="font-weight: 500;">₹${itemTotal.toFixed(2)}</span>
           </div>
         `;
       });
 
       listContainer.innerHTML = listHtml;
-      subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
-      totalEl.textContent = `$${subtotal.toFixed(2)}`;
+      subtotalEl.textContent = `₹${subtotal.toFixed(2)}`;
+      totalEl.textContent = `₹${subtotal.toFixed(2)}`;
     }
 
     async function handleCheckoutSubmit(e) {
@@ -233,6 +350,7 @@
       const phone = document.getElementById("cust-phone").value.trim();
       const address = document.getElementById("cust-address").value.trim();
       const notes = document.getElementById("cust-notes").value.trim();
+      const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
 
       const orderData = {
         customerName,
@@ -248,6 +366,9 @@
         })),
         total: subtotal,
         status: "pending",
+        paymentMethod: paymentMethod,
+        upiStatus: paymentMethod === "upi" ? "pending" : "none",
+        upiUtr: "",
         createdAt: isConfigured ? serverTimestamp() : new Date()
       };
 
@@ -358,20 +479,149 @@
           });
           localStorage.setItem("boutique_mock_products", JSON.stringify(savedMocks));
         }
+
+        // Also save the order to local mock orders array
+        let savedOrders = JSON.parse(localStorage.getItem("boutique_mock_orders") || "[]");
+        orderData.id = orderId;
+        savedOrders.unshift(orderData);
+        localStorage.setItem("boutique_mock_orders", JSON.stringify(savedOrders));
       }
 
-      // 2. Build WhatsApp redirect link message
-      let message = `*New Order from VibeBoutique!*\n`;
+      // Set tracking state variables for cancellation/re-ordering
+      lastPlacedOrderId = orderId;
+      lastPlacedOrderItems = [...cart];
+      lastPlacedOrderCustomerName = customerName;
+      lastPlacedOrderTotal = subtotal;
+      lastPlacedOrderPaymentMethod = paymentMethod;
+
+      // Clear cart from localStorage
+      localStorage.removeItem("boutique_cart");
+      updateCartBadge();
+
+      // Update success headers
+      document.getElementById("success-order-id").textContent = `#${orderId}`;
+
+      // Build success screen actions
+      setupSuccessScreenActions();
+      setupReorderWhatsAppLink();
+
+      // Dynamic UPI Setup
+      if (paymentMethod === "upi") {
+        document.getElementById("upi-payment-card").style.display = "block";
+        document.getElementById("upi-amount-val").textContent = `₹${subtotal.toFixed(2)}`;
+        
+        const storeUpi = appSettings.upiId || "vibe.boutique@okaxis";
+        const storeName = encodeURIComponent(appSettings.shopName || "Joe Boutique");
+        const upiLink = `upi://pay?pa=${storeUpi}&pn=${storeName}&am=${subtotal.toFixed(2)}&cu=INR&tn=Order_${orderId}`;
+        
+        // Render QR Code
+        const qrcodeDiv = document.getElementById("upi-qrcode");
+        qrcodeDiv.innerHTML = "";
+        try {
+          new QRCode(qrcodeDiv, {
+            text: upiLink,
+            width: 160,
+            height: 160,
+            colorDark: "#1C1C1C",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } catch (err) {
+          console.error("QRCode rendering failed:", err);
+          qrcodeDiv.innerHTML = "<span style='font-size:0.8rem; color:#A34E4E;'>Error creating QR Code. Use link below.</span>";
+        }
+
+        // Setup mobile direct pay button
+        const intentBtn = document.getElementById("upi-intent-link");
+        if (intentBtn) {
+          intentBtn.href = upiLink;
+          if (/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+            intentBtn.style.display = "flex";
+          } else {
+            intentBtn.style.display = "none";
+          }
+        }
+
+        // Setup verification submission
+        const verifyForm = document.getElementById("upi-verification-form");
+        if (verifyForm) {
+          // Display input form
+          verifyForm.style.display = "flex";
+          document.getElementById("upi-verification-success").style.display = "none";
+
+          verifyForm.onsubmit = async (evt) => {
+            evt.preventDefault();
+            const utrVal = document.getElementById("upi-utr-input").value.trim();
+            if (utrVal.length !== 12 || isNaN(utrVal)) {
+              alert("Please enter a valid 12-digit transaction UTR number.");
+              return;
+            }
+
+            const submitUtrBtn = document.getElementById("submit-utr-btn");
+            if (submitUtrBtn) {
+              submitUtrBtn.disabled = true;
+              submitUtrBtn.textContent = "Recording...";
+            }
+
+            if (isConfigured) {
+              try {
+                await updateDoc(doc(db, "orders", orderId), {
+                  upiUtr: utrVal,
+                  upiStatus: "verified_pending_admin"
+                });
+              } catch (err) {
+                console.error("Firestore UTR update failed:", err);
+              }
+            } else {
+              // Mock save UTR
+              let savedOrders = JSON.parse(localStorage.getItem("boutique_mock_orders") || "[]");
+              const mockOrder = savedOrders.find(o => o.id === orderId);
+              if (mockOrder) {
+                mockOrder.upiUtr = utrVal;
+                mockOrder.upiStatus = "verified_pending_admin";
+                localStorage.setItem("boutique_mock_orders", JSON.stringify(savedOrders));
+              }
+            }
+
+            // Success state UI
+            verifyForm.style.display = "none";
+            document.getElementById("upi-verification-success").style.display = "block";
+
+            // Update confirmation messaging links to include UTR
+            refreshMessagingLinks(orderId, customerName, phone, address, notes, paymentMethod, utrVal);
+          };
+        }
+
+        // Initialize Messaging Links without UTR first
+        refreshMessagingLinks(orderId, customerName, phone, address, notes, paymentMethod, "");
+      } else {
+        document.getElementById("upi-payment-card").style.display = "none";
+        refreshMessagingLinks(orderId, customerName, phone, address, notes, paymentMethod, "");
+      }
+
+      document.getElementById("checkout-form-view").style.display = "none";
+      document.getElementById("checkout-success-view").style.display = "block";
+      
+      // Smooth scroll to top of page
+      window.scrollTo(0, 0);
+    }
+
+    function refreshMessagingLinks(orderId, customerName, phone, address, notes, paymentMethod, utrVal = "") {
+      let message = `*New Order from Joe Boutique!*\n`;
       message += `Order ID: \`${orderId}\`\n\n`;
       message += `*Items:*\n`;
       
-      cart.forEach(item => {
+      lastPlacedOrderItems.forEach(item => {
         const variantDesc = [item.variant?.size, item.variant?.color].filter(Boolean).join(" / ");
-        message += `- ${item.qty}x ${item.name} ${variantDesc ? `(${variantDesc})` : ''} - $${(item.price * item.qty).toFixed(2)}\n`;
+        message += `- ${item.qty}x ${item.name} ${variantDesc ? `(${variantDesc})` : ''} - ₹${(item.price * item.qty).toFixed(2)}\n`;
       });
       
-      message += `\n*Total:* $${subtotal.toFixed(2)}\n\n`;
-      message += `*Delivery Info:*\n`;
+      message += `\n*Total:* ₹${lastPlacedOrderTotal.toFixed(2)}\n`;
+      message += `*Payment Method:* ${paymentMethod === 'upi' ? 'UPI Online' : 'Chat & Pay'}\n`;
+      if (paymentMethod === 'upi') {
+        message += `*UPI Ref (UTR):* \`${utrVal || 'NOT ENTERED YET'}\`\n`;
+      }
+      message += `\n*Delivery Info:*\n`;
       message += `- Name: ${customerName}\n`;
       message += `- Phone: ${phone}\n`;
       message += `- Address: ${address}\n`;
@@ -382,31 +632,27 @@
 
       const encodedMessage = encodeURIComponent(message);
       const whatsappUrl = `https://wa.me/${appSettings.whatsappNumber}?text=${encodedMessage}`;
-
-      // Set tracking state variables for cancellation/re-ordering
-      lastPlacedOrderId = orderId;
-      lastPlacedOrderItems = [...cart];
-      lastPlacedOrderCustomerName = customerName;
-      lastPlacedOrderTotal = subtotal;
-
-      // 3. Clear cart from localStorage
-      localStorage.removeItem("boutique_cart");
-      updateCartBadge();
-
-      // 4. Update elements and swap displays
-      document.getElementById("success-order-id").textContent = `#${orderId}`;
+      
       const waBtn = document.getElementById("whatsapp-confirm-btn");
       if (waBtn) waBtn.href = whatsappUrl;
 
-      // Bind success screen actions (Instagram DM confirmation, Cancel order, Re-order options)
-      setupSuccessScreenActions();
-      setupReorderWhatsAppLink();
-
-      document.getElementById("checkout-form-view").style.display = "none";
-      document.getElementById("checkout-success-view").style.display = "block";
-      
-      // Smooth scroll to top of page
-      window.scrollTo(0, 0);
+      // Update Instagram text copy template
+      window.getOrderSummaryTextCustom = () => {
+        let msg = `Hello, I would like to confirm my Joe Boutique order!\n\n`;
+        msg += `Order ID: ${orderId}\n\n`;
+        msg += `Items:\n`;
+        lastPlacedOrderItems.forEach(item => {
+          const variantDesc = [item.variant?.size, item.variant?.color].filter(Boolean).join(" / ");
+          msg += `- ${item.qty}x ${item.name} ${variantDesc ? `(${variantDesc})` : ''} - ₹${(item.price * item.qty).toFixed(2)}\n`;
+        });
+        msg += `\nTotal: ₹${lastPlacedOrderTotal.toFixed(2)}\n`;
+        msg += `Payment Method: ${paymentMethod === 'upi' ? 'UPI Online' : 'Chat & Pay'}\n`;
+        if (paymentMethod === 'upi') {
+          msg += `UPI Ref (UTR): ${utrVal || 'Pending UTR Entry'}\n`;
+        }
+        msg += `\nDelivery Name: ${customerName}`;
+        return msg;
+      };
     }
 
     // Success Screen Event Handlers & Helpers
@@ -442,6 +688,14 @@
           reorderOnInstagram();
         };
       }
+
+      // Print Receipt Action
+      const printBtn = document.getElementById("print-receipt-btn");
+      if (printBtn) {
+        printBtn.onclick = () => {
+          window.print();
+        };
+      }
     }
 
     function setupReorderWhatsAppLink() {
@@ -455,9 +709,9 @@
           message += `*Items:*\n`;
           lastPlacedOrderItems.forEach(item => {
             const variantDesc = [item.variant?.size, item.variant?.color].filter(Boolean).join(" / ");
-            message += `- ${item.qty}x ${item.name} ${variantDesc ? `(${variantDesc})` : ''} - $${(item.price * item.qty).toFixed(2)}\n`;
+            message += `- ${item.qty}x ${item.name} ${variantDesc ? `(${variantDesc})` : ''} - ₹${(item.price * item.qty).toFixed(2)}\n`;
           });
-          message += `\n*Total:* $${lastPlacedOrderTotal.toFixed(2)}\n\n`;
+          message += `\n*Total:* ₹${lastPlacedOrderTotal.toFixed(2)}\n\n`;
           message += `*Delivery Info:*\n`;
           message += `- Name: ${lastPlacedOrderCustomerName}\n`;
           message += `Please confirm my order. Thank you!`;
@@ -471,10 +725,10 @@
     function setupCancelWhatsAppLink() {
       const whatsappCancelBtn = document.getElementById("whatsapp-cancel-notify-btn");
       if (whatsappCancelBtn) {
-        let message = `*Order Cancellation Notice from VibeBoutique!*\n\n`;
+        let message = `*Order Cancellation Notice from Joe Boutique!*\n\n`;
         message += `Order ID: \`${lastPlacedOrderId}\`\n`;
         message += `Customer Name: ${lastPlacedOrderCustomerName}\n`;
-        message += `Total: $${lastPlacedOrderTotal.toFixed(2)}\n\n`;
+        message += `Total: ₹${lastPlacedOrderTotal.toFixed(2)}\n\n`;
         message += `Please note I have cancelled this order. Thank you!`;
 
         const encoded = encodeURIComponent(message);
@@ -596,29 +850,31 @@
       
       // Toggle card displays
       document.getElementById("confirm-options-card").style.display = "none";
+      document.getElementById("upi-payment-card").style.display = "none";
       document.getElementById("cancel-options-card").style.display = "block";
       
       window.scrollTo(0, 0);
     }
 
     function getOrderSummaryText() {
-      let message = `Hello, I would like to confirm my VibeBoutique order!\n\n`;
+      if (window.getOrderSummaryTextCustom) return window.getOrderSummaryTextCustom();
+      let message = `Hello, I would like to confirm my Joe Boutique order!\n\n`;
       message += `Order ID: ${lastPlacedOrderId}\n\n`;
       message += `Items:\n`;
       lastPlacedOrderItems.forEach(item => {
         const variantDesc = [item.variant?.size, item.variant?.color].filter(Boolean).join(" / ");
-        message += `- ${item.qty}x ${item.name} ${variantDesc ? `(${variantDesc})` : ''} - $${(item.price * item.qty).toFixed(2)}\n`;
+        message += `- ${item.qty}x ${item.name} ${variantDesc ? `(${variantDesc})` : ''} - ₹${(item.price * item.qty).toFixed(2)}\n`;
       });
-      message += `\nTotal: $${lastPlacedOrderTotal.toFixed(2)}\n\n`;
+      message += `\nTotal: ₹${lastPlacedOrderTotal.toFixed(2)}\n\n`;
       message += `Delivery Name: ${lastPlacedOrderCustomerName}`;
       return message;
     }
 
     function getCancellationText() {
-      let message = `Hello, I would like to cancel my order from VibeBoutique.\n\n`;
+      let message = `Hello, I would like to cancel my order from Joe Boutique.\n\n`;
       message += `Order ID: ${lastPlacedOrderId}\n`;
       message += `Customer Name: ${lastPlacedOrderCustomerName}\n`;
-      message += `Order Total: $${lastPlacedOrderTotal.toFixed(2)}`;
+      message += `Order Total: ₹${lastPlacedOrderTotal.toFixed(2)}`;
       return message;
     }
 
@@ -626,9 +882,9 @@
       let message = `Hello, I would like to place this order again via Instagram:\n\n`;
       lastPlacedOrderItems.forEach(item => {
         const variantDesc = [item.variant?.size, item.variant?.color].filter(Boolean).join(" / ");
-        message += `- ${item.qty}x ${item.name} ${variantDesc ? `(${variantDesc})` : ''} - $${(item.price * item.qty).toFixed(2)}\n`;
+        message += `- ${item.qty}x ${item.name} ${variantDesc ? `(${variantDesc})` : ''} - ₹${(item.price * item.qty).toFixed(2)}\n`;
       });
-      message += `\nTotal: $${lastPlacedOrderTotal.toFixed(2)}\n\n`;
+      message += `\nTotal: ₹${lastPlacedOrderTotal.toFixed(2)}\n\n`;
       message += `Delivery Name: ${lastPlacedOrderCustomerName}`;
       return message;
     }

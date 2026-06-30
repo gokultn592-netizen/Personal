@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VibeBoutique — Product Details</title>
+  <title>Joe Boutique — Product Details</title>
   <meta name="description" content="View product specifications, configure size or color variations, and prepare your custom selection for checkout.">
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -100,7 +100,7 @@
       }
 
       // Set page Title tag
-      document.title = `${activeProduct.name} — VibeBoutique`;
+      document.title = `${activeProduct.name} — Joe Boutique`;
 
       // 4. Render product information template
       const sizeOptions = activeProduct.sizes || [];
@@ -127,7 +127,7 @@
           <div class="product-detail-info">
             <span class="detail-category">${activeProduct.category || 'Garments'}</span>
             <h1 class="detail-title">${activeProduct.name}</h1>
-            <div class="detail-price">$${Number(activeProduct.price).toFixed(2)}</div>
+            <div class="detail-price">₹${Number(activeProduct.price).toFixed(2)}</div>
             
             <p class="detail-description">${activeProduct.description || 'No description available for this curated item.'}</p>
             

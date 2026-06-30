@@ -306,7 +306,7 @@ function renderProducts() {
         <div class="product-info">
           <span class="product-category">${product.category || 'Garments'}</span>
           <a href="product.html?id=${product.id}"><h3 class="product-title">${product.name}</h3></a>
-          <div class="product-price">$${Number(product.price).toFixed(2)}</div>
+          <div class="product-price">₹${Number(product.price).toFixed(2)}</div>
         </div>
       </article>
     `;

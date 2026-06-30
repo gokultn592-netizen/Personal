@@ -66,7 +66,7 @@ function renderCart() {
             </div>
           </div>
         </td>
-        <td class="cart-item-price-td">$${item.price.toFixed(2)}</td>
+        <td class="cart-item-price-td">₹${item.price.toFixed(2)}</td>
         <td>
           <div class="quantity-selector">
             <button class="qty-btn dec-qty-btn" data-index="${index}">-</button>
@@ -96,7 +96,7 @@ function renderCart() {
       <h3 class="cart-summary-title">Summary</h3>
       <div class="summary-row">
         <span class="text-muted">Subtotal</span>
-        <span style="font-weight: 500;">$${subtotal.toFixed(2)}</span>
+        <span style="font-weight: 500;">₹${subtotal.toFixed(2)}</span>
       </div>
       <div class="summary-row" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.8rem;">
         <span class="text-muted">Shipping</span>
@@ -104,7 +104,7 @@ function renderCart() {
       </div>
       <div class="summary-row" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
         <span class="summary-total-label">Estimated Total</span>
-        <span class="summary-total-val">$${subtotal.toFixed(2)}</span>
+        <span class="summary-total-val">₹${subtotal.toFixed(2)}</span>
       </div>
       <a href="checkout.html" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem; text-align: center;">
         Proceed To Checkout
