@@ -463,6 +463,7 @@
       if (isConfigured) {
         try {
           const mockItemsToUpdate = [];
+          console.log("Checkout: Initiating Firestore stock update transaction for cart:", cart);
           
           // Decrement stocks first in a transaction to ensure stock is available and updated atomically
           await runTransaction(db, async (transaction) => {
@@ -470,16 +471,20 @@
             
             // First read all products in the transaction (reads must happen before writes)
             for (const item of cart) {
+              console.log("Checkout transaction: Checking item ID =", item.productId);
               if (item.productId.startsWith("mock") || item.productId.startsWith("MOCK")) {
+                console.log("Checkout transaction: Item is a local mock product, skipping Firestore fetch.");
                 if (!mockItemsToUpdate.includes(item)) mockItemsToUpdate.push(item);
                 continue;
               }
               const productRef = doc(db, "products", item.productId);
               const productSnap = await transaction.get(productRef);
               if (!productSnap.exists()) {
+                console.log(`Checkout transaction: Product ID ${item.productId} not found in Firestore. Treating as mock.`);
                 if (!mockItemsToUpdate.includes(item)) mockItemsToUpdate.push(item);
                 continue;
               }
+              console.log(`Checkout transaction: Found product ${item.name} in Firestore. Current stock = ${productSnap.data().stock}`);
               productDocs.push({ ref: productRef, snap: productSnap, item });
             }
 
@@ -493,30 +498,38 @@
               if (item.variant && item.variant.size && productData.sizesStock) {
                 const size = item.variant.size;
                 const sizeStock = productData.sizesStock[size] || 0;
+                console.log(`Checkout transaction: Checking size ${size} stock for ${item.name}. Available = ${sizeStock}, requested = ${buyQty}`);
                 if (sizeStock < buyQty) {
                   throw new Error(`Insufficient stock for size ${size} of ${item.name}!`);
                 }
                 
                 const newSizesStock = { ...productData.sizesStock };
                 newSizesStock[size] = sizeStock - buyQty;
+                const newTotalStock = currentStock - buyQty;
                 
+                console.log(`Checkout transaction: Updating product ${item.name} size ${size} stock to ${newSizesStock[size]}, total stock to ${newTotalStock}`);
                 transaction.update(ref, {
-                  stock: currentStock - buyQty,
+                  stock: newTotalStock,
                   sizesStock: newSizesStock,
                   updatedAt: serverTimestamp()
                 });
               } else {
                 // Global stock fallback
+                console.log(`Checkout transaction: Checking global stock for ${item.name}. Available = ${currentStock}, requested = ${buyQty}`);
                 if (currentStock < buyQty) {
                   throw new Error(`Insufficient stock for ${item.name}!`);
                 }
+                const newTotalStock = currentStock - buyQty;
+                console.log(`Checkout transaction: Updating product ${item.name} global stock to ${newTotalStock}`);
                 transaction.update(ref, {
-                  stock: currentStock - buyQty,
+                  stock: newTotalStock,
                   updatedAt: serverTimestamp()
                 });
               }
             }
           });
+
+          console.log("Checkout transaction: Successfully committed stock updates!");
 
           // After transaction completes, update mock items in localStorage if any
           if (mockItemsToUpdate.length > 0) {
