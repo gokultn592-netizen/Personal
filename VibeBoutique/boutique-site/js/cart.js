@@ -226,9 +226,9 @@ async function loadUserOrderHistory(user) {
   console.log("loadUserOrderHistory: Starting history fetch. isConfigured =", isConfigured, "User UID =", user.uid);
 
   if (isConfigured) {
+    // 1. Fetch user orders from Firestore
     try {
       console.log("loadUserOrderHistory: Querying orders for buyerUid =", user.uid);
-      // 1. Fetch user orders from Firestore (without orderBy to avoid index requirement)
       const ordersQuery = query(
         collection(db, "orders"),
         where("buyerUid", "==", user.uid)
@@ -246,9 +246,14 @@ async function loadUserOrderHistory(user) {
         const timeB = b.createdAt?.seconds || (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
         return timeB - timeA;
       });
+    } catch (e) {
+      console.error("loadUserOrderHistory: Orders fetch failed, using mock orders fallback:", e);
+      orders = getMockUserOrders(user);
+    }
 
+    // 2. Fetch user returns from Firestore
+    try {
       console.log("loadUserOrderHistory: Querying returns for buyerUid =", user.uid);
-      // 2. Fetch user returns from Firestore
       const returnsQuery = query(
         collection(db, "returns"),
         where("buyerUid", "==", user.uid)
@@ -267,8 +272,7 @@ async function loadUserOrderHistory(user) {
         return timeB - timeA;
       });
     } catch (e) {
-      console.error("loadUserOrderHistory: Firestore query failed! Error details:", e);
-      orders = getMockUserOrders(user);
+      console.warn("loadUserOrderHistory: Returns fetch failed (possibly due to rules config), using mock returns fallback:", e);
       returns = getMockUserReturns(user);
     }
   } else {
