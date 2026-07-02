@@ -24,10 +24,19 @@ service cloud.firestore {
     }
 
     // Orders: Any signed-in user can create (place an order),
-    // only admins can read or update
+    // only admins can write/update. Buyers can read their own orders.
     match /orders/{orderId} {
       allow create: if request.auth != null;
-      allow read, update, delete: if isAdmin();
+      allow read: if request.auth != null && (isAdmin() || resource.data.buyerUid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // Returns: Any signed-in user can submit a request.
+    // Buyers can read their own return requests, admins can manage them.
+    match /returns/{returnId} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && (isAdmin() || resource.data.buyerUid == request.auth.uid);
+      allow update, delete: if isAdmin();
     }
 
     // Settings: Any signed-in user can read (to get WhatsApp number),

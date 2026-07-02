@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Return Request — Joe Boutique</title>
+  <meta name="description" content="Submit a return or exchange request for your Joe Boutique order. Easy 7-day hassle-free returns.">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .return-layout {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .return-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+    }
+    .return-card h2 {
+      font-size: 1.4rem;
+      margin-bottom: var(--spacing-sm);
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+      font-family: var(--font-heading);
+    }
+    .reason-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 0.8rem;
+      margin-bottom: 0.4rem;
+      border-radius: var(--radius-xs);
+      cursor: pointer;
+      transition: var(--transition-fast);
+      font-size: 0.92rem;
+    }
+    .reason-option:hover {
+      background: rgba(197, 168, 128, 0.08);
+    }
+    .reason-option input[type="radio"] {
+      accent-color: var(--accent-gold);
+      width: 16px;
+      height: 16px;
+    }
+    .return-success-view {
+      text-align: center;
+      padding: var(--spacing-lg) 0;
+    }
+    .return-success-view .success-icon {
+      font-size: 3.5rem;
+      color: var(--accent-gold);
+      margin-bottom: var(--spacing-sm);
+    }
+    .return-success-view h2 {
+      font-family: var(--font-heading);
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+    }
+    .return-success-view p {
+      color: var(--text-muted);
+      max-width: 480px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .return-id-badge {
+      display: inline-block;
+      background: rgba(197, 168, 128, 0.12);
+      border: 1px solid var(--accent-gold);
+      border-radius: var(--radius-xs);
+      padding: 0.4rem 1rem;
+      font-family: var(--font-heading);
+      font-size: 1.1rem;
+      color: var(--accent-gold);
+      margin: var(--spacing-sm) 0;
+      letter-spacing: 0.05em;
+    }
+    .return-policy-note {
+      background: rgba(197, 168, 128, 0.06);
+      border-left: 3px solid var(--accent-gold);
+      padding: 0.8rem 1rem;
+      border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+      margin-top: var(--spacing-sm);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .return-policy-note strong {
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Injected by main.js -->
+  <header></header>
+
+  <main class="section">
+    <div class="container">
+      <div class="return-layout">
+
+        <!-- Return Form View -->
+        <div id="return-form-view">
+          <div style="margin-bottom: var(--spacing-md);">
+            <p class="section-subtitle">Easy Returns</p>
+            <h1 class="section-title">Return / Exchange Request</h1>
+          </div>
+
+          <div class="return-card">
+            <h2><i class="fas fa-box-open" style="color: var(--accent-gold); margin-right: 0.4rem;"></i> Order Details</h2>
+            <form id="return-form">
+              <div class="form-group">
+                <label for="return-order-id">Order ID *</label>
+                <input type="text" id="return-order-id" class="form-input" placeholder="e.g. MOCK-A1B2C3D4E or Firestore ID" required>
+              </div>
+              <div class="form-group">
+                <label for="return-name">Your Name *</label>
+                <input type="text" id="return-name" class="form-input" placeholder="e.g. Jane Doe" required>
+              </div>
+              <div class="form-group">
+                <label for="return-phone">WhatsApp / Phone Number *</label>
+                <input type="tel" id="return-phone" class="form-input" placeholder="e.g. +91 98765 43210" required>
+              </div>
+              <div class="form-group">
+                <label for="return-product">Product Name *</label>
+                <input type="text" id="return-product" class="form-input" placeholder="e.g. Linen Gold Trim Kimono — Size M, Ivory" required>
+              </div>
+
+              <div class="form-group" style="margin-top: var(--spacing-sm);">
+                <label style="font-weight: 600; margin-bottom: 0.5rem; display: block;">Request Type *</label>
+                <div style="display: flex; gap: 1.5rem; margin-bottom: 0.5rem;">
+                  <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.92rem;">
+                    <input type="radio" name="return-type" value="return" checked style="accent-color: var(--accent-gold);">
+                    <span><i class="fas fa-rotate-left" style="color: var(--accent-gold); margin-right: 2px;"></i> Return</span>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.92rem;">
+                    <input type="radio" name="return-type" value="exchange" style="accent-color: var(--accent-gold);">
+                    <span><i class="fas fa-arrows-rotate" style="color: var(--accent-gold); margin-right: 2px;"></i> Exchange</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: var(--spacing-sm);">
+                <label style="font-weight: 600; margin-bottom: 0.5rem; display: block;">Reason for Return *</label>
+                <div class="reason-option">
+                  <input type="radio" name="return-reason" id="reason-1" value="Wrong size / doesn't fit" required>
+                  <label for="reason-1">Wrong size / doesn't fit</label>
+                </div>
+                <div class="reason-option">
+                  <input type="radio" name="return-reason" id="reason-2" value="Received damaged / defective item">
+                  <label for="reason-2">Received damaged / defective item</label>
+                </div>
+                <div class="reason-option">
+                  <input type="radio" name="return-reason" id="reason-3" value="Color doesn't match photos">
+                  <label for="reason-3">Color doesn't match photos</label>
+                </div>
+                <div class="reason-option">
+                  <input type="radio" name="return-reason" id="reason-4" value="Wrong product received">
+                  <label for="reason-4">Wrong product received</label>
+                </div>
+                <div class="reason-option">
+                  <input type="radio" name="return-reason" id="reason-5" value="Quality not as expected">
+                  <label for="reason-5">Quality not as expected</label>
+                </div>
+                <div class="reason-option">
+                  <input type="radio" name="return-reason" id="reason-6" value="Changed my mind">
+                  <label for="reason-6">Changed my mind</label>
+                </div>
+                <div class="reason-option">
+                  <input type="radio" name="return-reason" id="reason-7" value="Other">
+                  <label for="reason-7">Other</label>
+                </div>
+              </div>
+
+              <div class="form-group" id="other-reason-group" style="display: none;">
+                <label for="return-other-reason">Please specify *</label>
+                <input type="text" id="return-other-reason" class="form-input" placeholder="Tell us what happened...">
+              </div>
+
+              <div class="form-group">
+                <label for="return-notes">Additional Notes</label>
+                <textarea id="return-notes" class="form-input" rows="3" placeholder="Any extra details, e.g. preferred exchange item, photos of damage..." style="resize: vertical; font-family: inherit;"></textarea>
+              </div>
+
+              <div class="return-policy-note">
+                <strong>Return Policy:</strong> Items must be in original condition with tags attached. Returns are accepted within 7 days of delivery. Refunds will be processed to the original payment method within 5–7 business days after the item is received.
+              </div>
+
+              <div style="margin-top: var(--spacing-md); display: flex; gap: var(--spacing-sm); justify-content: flex-end;">
+                <a href="index.html" class="btn btn-secondary btn-pill">Cancel</a>
+                <button type="submit" id="submit-return-btn" class="btn btn-primary btn-pill">
+                  <i class="fas fa-paper-plane" style="margin-right: 0.3rem;"></i> Submit Request
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Success View -->
+        <div id="return-success-view" class="return-success-view" style="display: none;">
+          <div class="return-card" style="padding: var(--spacing-lg);">
+            <i class="fas fa-check-circle success-icon"></i>
+            <h2>Return Request Submitted</h2>
+            <p>Your return request has been received. We'll review it and contact you shortly.</p>
+            <div class="return-id-badge" id="return-request-id"></div>
+            <p style="margin-top: var(--spacing-sm); font-size: 0.85rem;">
+              Our team will reach out to you via WhatsApp to arrange the return pickup or exchange. Please keep the item packed and ready.
+            </p>
+            <div style="margin-top: var(--spacing-md); display: flex; gap: var(--spacing-sm); justify-content: center; flex-wrap: wrap;">
+              <a href="shop.html" class="btn btn-primary btn-pill"><i class="fas fa-bag-shopping" style="margin-right: 0.3rem;"></i> Continue Shopping</a>
+              <a href="index.html" class="btn btn-secondary btn-pill"><i class="fas fa-house" style="margin-right: 0.3rem;"></i> Back to Home</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { db, isConfigured } from "./js/firebase-config.js";
+    import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { currentUser } from "./js/main.js";
+
+    // Auto-fill form from URL query parameters if provided
+    document.addEventListener("DOMContentLoaded", () => {
+      const params = new URLSearchParams(window.location.search);
+      const orderId = params.get("orderId");
+      const name = params.get("name");
+      const phone = params.get("phone");
+      const product = params.get("product");
+
+      if (orderId) document.getElementById("return-order-id").value = orderId;
+      if (name) document.getElementById("return-name").value = name;
+      if (phone) document.getElementById("return-phone").value = phone;
+      if (product) document.getElementById("return-product").value = product;
+    });
+
+    // Show/hide "Other" reason text input
+    document.querySelectorAll('input[name="return-reason"]').forEach(radio => {
+      radio.addEventListener("change", () => {
+        const otherGroup = document.getElementById("other-reason-group");
+        if (radio.value === "Other" && radio.checked) {
+          otherGroup.style.display = "block";
+        } else {
+          otherGroup.style.display = "none";
+        }
+      });
+    });
+
+    // Handle form submission
+    const form = document.getElementById("return-form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const submitBtn = document.getElementById("submit-return-btn");
+      submitBtn.textContent = "Submitting...";
+      submitBtn.disabled = true;
+
+      const orderId = document.getElementById("return-order-id").value.trim();
+      const name = document.getElementById("return-name").value.trim();
+      const phone = document.getElementById("return-phone").value.trim();
+      const product = document.getElementById("return-product").value.trim();
+      const returnType = document.querySelector('input[name="return-type"]:checked').value;
+      const reasonRadio = document.querySelector('input[name="return-reason"]:checked');
+      
+      if (!reasonRadio) {
+        alert("Please select a reason for your return.");
+        submitBtn.textContent = "Submit Request";
+        submitBtn.disabled = false;
+        return;
+      }
+
+      let reason = reasonRadio.value;
+      if (reason === "Other") {
+        const otherReason = document.getElementById("return-other-reason").value.trim();
+        if (!otherReason) {
+          alert("Please specify your reason.");
+          submitBtn.textContent = "Submit Request";
+          submitBtn.disabled = false;
+          return;
+        }
+        reason = "Other: " + otherReason;
+      }
+
+      const notes = document.getElementById("return-notes").value.trim();
+
+      const returnData = {
+        buyerUid: currentUser ? currentUser.uid : "mock-uid",
+        buyerEmail: currentUser ? currentUser.email : "guest@guest.com",
+        orderId,
+        customerName: name,
+        phone,
+        product,
+        type: returnType,
+        reason,
+        notes: notes || "",
+        status: "pending",
+        createdAt: isConfigured ? serverTimestamp() : new Date()
+      };
+
+      let returnRequestId = "RET-" + Math.random().toString(36).substr(2, 9).toUpperCase();
+
+      try {
+        if (isConfigured) {
+          const docRef = await addDoc(collection(db, "returns"), returnData);
+          returnRequestId = docRef.id;
+        } else {
+          // Save to localStorage for mock mode
+          returnData.id = returnRequestId;
+          let savedReturns = JSON.parse(localStorage.getItem("boutique_mock_returns") || "[]");
+          savedReturns.unshift(returnData);
+          localStorage.setItem("boutique_mock_returns", JSON.stringify(savedReturns));
+        }
+
+        // Show success
+        document.getElementById("return-form-view").style.display = "none";
+        document.getElementById("return-success-view").style.display = "block";
+        document.getElementById("return-request-id").textContent = `#${returnRequestId}`;
+      } catch (err) {
+        console.error("Return submission failed:", err);
+        alert("Failed to submit return request: " + err.message);
+        submitBtn.textContent = "Submit Request";
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

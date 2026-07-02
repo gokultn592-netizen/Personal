@@ -1,8 +1,43 @@
 import { updateCartBadge } from "./main.js";
+import { db, isConfigured, auth } from "./firebase-config.js";
+import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   renderCart();
+
+  // Natively listen to Firebase Auth state updates directly (no race conditions!)
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      loadUserOrderHistory(user);
+    } else {
+      showGuestOrderHistoryMessage();
+    }
+  });
 });
+
+function showGuestOrderHistoryMessage() {
+  const historySection = document.getElementById("order-history-section");
+  const historyContainer = document.getElementById("order-history-container");
+  if (!historySection || !historyContainer) return;
+
+  historySection.style.display = "block";
+  historyContainer.innerHTML = `
+    <div class="text-center text-muted" style="padding: var(--spacing-lg) 0; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <i class="fas fa-user-lock" style="font-size: 2.2rem; color: var(--accent-gold); margin-bottom: 0.6rem; opacity: 0.8;"></i>
+      <p style="font-size: 0.92rem; max-width: 320px; margin: 0 auto 1rem;">Sign in with your Google account to view your past orders and returns tracking.</p>
+      <button id="cart-guest-signin-btn" class="btn btn-pill" style="padding: 0.45rem 1.5rem !important; font-size: 0.78rem !important; background: var(--accent-gold); color: var(--bg-dark); border: none; font-weight: 600; cursor: pointer;">
+        Sign In to Track Orders
+      </button>
+    </div>
+  `;
+
+  const btn = document.getElementById("cart-guest-signin-btn");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      import("./main.js").then(m => m.showSignInOverlay());
+    });
+  }
+}
 
 // Main function to load and render cart elements
 function renderCart() {
@@ -112,6 +147,9 @@ function renderCart() {
       <a href="shop.html" class="text-center" style="font-size: 0.85rem; text-decoration: underline; margin-top: 0.5rem;">
         Continue Shopping
       </a>
+      <a href="returns.html" class="text-center" style="font-size: 0.85rem; margin-top: 0.3rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem; color: var(--accent-gold); text-decoration: none;">
+        <i class="fas fa-rotate-left" style="font-size: 0.78rem;"></i> Returns & Exchange
+      </a>
     </div>
   `;
 
@@ -175,3 +213,197 @@ function saveAndReload(cart) {
   renderCart();
 }
 export { renderCart };
+
+// Load and Render Buyer's Order History & Returns tracking
+async function loadUserOrderHistory(user) {
+  const historySection = document.getElementById("order-history-section");
+  const historyContainer = document.getElementById("order-history-container");
+  if (!historySection || !historyContainer) return;
+
+  let orders = [];
+  let returns = [];
+
+  if (isConfigured) {
+    try {
+      // 1. Fetch user orders from Firestore (without orderBy to avoid index requirement)
+      const ordersQuery = query(
+        collection(db, "orders"),
+        where("buyerUid", "==", user.uid)
+      );
+      const ordersSnap = await getDocs(ordersQuery);
+      ordersSnap.forEach(doc => {
+        orders.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Sort orders in-memory (newest first)
+      orders.sort((a, b) => {
+        const timeA = a.createdAt?.seconds || (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
+        const timeB = b.createdAt?.seconds || (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
+        return timeB - timeA;
+      });
+
+      // 2. Fetch user returns from Firestore
+      const returnsQuery = query(
+        collection(db, "returns"),
+        where("buyerUid", "==", user.uid)
+      );
+      const returnsSnap = await getDocs(returnsQuery);
+      returnsSnap.forEach(doc => {
+        returns.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Sort returns in-memory (newest first)
+      returns.sort((a, b) => {
+        const timeA = a.createdAt?.seconds || (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
+        const timeB = b.createdAt?.seconds || (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
+        return timeB - timeA;
+      });
+    } catch (e) {
+      console.error("Firestore order history query failed, falling back to local mock:", e);
+      orders = getMockUserOrders(user);
+      returns = getMockUserReturns(user);
+    }
+  } else {
+    orders = getMockUserOrders(user);
+    returns = getMockUserReturns(user);
+  }
+
+  // Always display the tracker section if user is logged in
+  historySection.style.display = "block";
+
+  if (orders.length === 0) {
+    historyContainer.innerHTML = `
+      <div class="text-center text-muted" style="padding: var(--spacing-lg) 0; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+        <i class="fas fa-box-open" style="font-size: 2.2rem; color: var(--accent-gold); margin-bottom: 0.6rem; opacity: 0.8;"></i>
+        <p style="font-size: 0.92rem; max-width: 320px; margin: 0 auto;">No past orders found. Once you place an order, it will show up here for status tracking and returns.</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Build returns lookup map: orderId -> productName -> status
+  const returnMap = {};
+  returns.forEach(ret => {
+    if (ret.orderId) {
+      if (!returnMap[ret.orderId]) {
+        returnMap[ret.orderId] = {};
+      }
+      returnMap[ret.orderId][ret.product] = {
+        id: ret.id,
+        status: ret.status || "pending",
+        type: ret.type || "return"
+      };
+    }
+  });
+
+  // Render orders
+  historyContainer.innerHTML = orders.map(order => {
+    let dateStr = "—";
+    if (order.createdAt) {
+      const d = order.createdAt.seconds
+        ? new Date(order.createdAt.seconds * 1000)
+        : new Date(order.createdAt);
+      dateStr = d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    }
+
+    const itemsHtml = (order.items || []).map(item => {
+      const variantDesc = [item.variant?.size, item.variant?.color].filter(Boolean).join(" / ");
+      
+      // Check return request status lookup
+      const returnRequest = returnMap[order.id]?.[item.name];
+      let returnActionHtml = "";
+
+      if (returnRequest) {
+        // Return already requested, show status badge
+        const retStatusColors = {
+          pending: "background: rgba(234,179,8,0.12); color: #eab308;",
+          approved: "background: rgba(34,197,94,0.12); color: #22c55e;",
+          rejected: "background: rgba(239,68,68,0.12); color: #ef4444;",
+          completed: "background: rgba(59,130,246,0.15); color: #3b82f6;"
+        };
+        const style = retStatusColors[returnRequest.status] || retStatusColors.pending;
+        const typeLabel = returnRequest.type === "exchange" ? "Exchange" : "Return";
+        returnActionHtml = `
+          <div style="text-align: right;">
+            <span class="tracker-badge" style="${style}">${typeLabel} ${returnRequest.status}</span>
+          </div>
+        `;
+      } else if (order.status === "completed" || order.status === "shipped") {
+        // Return option only available for fulfilled orders (matching real store workflow)
+        const returnUrl = `returns.html?orderId=${order.id}&name=${encodeURIComponent(order.customerName)}&phone=${encodeURIComponent(order.phone)}&product=${encodeURIComponent(item.name + (variantDesc ? ' — ' + variantDesc : ''))}`;
+        returnActionHtml = `
+          <a href="${returnUrl}" class="btn btn-secondary btn-tracker-action btn-pill" style="padding: 0.35rem 0.9rem !important; font-size: 0.72rem !important;">
+            Return or Exchange
+          </a>
+        `;
+      }
+
+      return `
+        <div class="tracker-item-row">
+          <img class="tracker-item-img" src="${item.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop'}" alt="${item.name}">
+          <div class="tracker-item-details">
+            <h4 class="tracker-item-name">${item.name}</h4>
+            ${variantDesc ? `<span class="tracker-item-meta">${variantDesc}</span>` : ""}
+            <div class="tracker-item-qty">Qty: ${item.qty}</div>
+          </div>
+          <div>
+            <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; text-align: right;">₹${(item.price * item.qty).toFixed(2)}</div>
+            ${returnActionHtml}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    // Setup order status badge
+    let statusClass = "badge-pending";
+    if (order.status === "shipped") statusClass = "badge-shipped";
+    if (order.status === "completed") statusClass = "badge-delivered";
+    if (order.status === "cancelled") statusClass = "badge-cancelled";
+    if (order.status === "refunded") statusClass = "badge-refunded";
+
+    return `
+      <div class="tracker-card">
+        <div class="tracker-header">
+          <div class="tracker-header-info">
+            <div>
+              <div class="tracker-header-label">Order Placed</div>
+              <div class="tracker-header-val">${dateStr}</div>
+            </div>
+            <div>
+              <div class="tracker-header-label">Total Amount</div>
+              <div class="tracker-header-val" style="font-weight: 600;">₹${order.total.toFixed(2)}</div>
+            </div>
+            <div>
+              <div class="tracker-header-label">Ship To</div>
+              <div class="tracker-header-val">${order.customerName}</div>
+            </div>
+          </div>
+          <div>
+            <span class="tracker-header-label" style="display: block; text-align: right;">Order ID</span>
+            <span class="tracker-order-id">#${order.id}</span>
+          </div>
+        </div>
+        <div class="tracker-body">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 0, 0, 0.05); padding-bottom: 0.6rem; margin-bottom: 0.4rem;">
+            <div style="font-weight: 600; font-size: 0.92rem; text-transform: uppercase; color: var(--text-muted);">Status</div>
+            <span class="tracker-badge ${statusClass}">${order.status}</span>
+          </div>
+          ${itemsHtml}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// Local storage fallback helpers for mock demo mode
+function getMockUserOrders(user) {
+  const savedOrders = JSON.parse(localStorage.getItem("boutique_mock_orders") || "[]");
+  // Match user's orders, including legacy orders without buyerUid
+  return savedOrders.filter(order => !order.buyerUid || order.buyerUid === user.uid);
+}
+
+function getMockUserReturns(user) {
+  const savedReturns = JSON.parse(localStorage.getItem("boutique_mock_returns") || "[]");
+  // Match user's returns, including legacy returns without buyerUid
+  return savedReturns.filter(ret => !ret.buyerUid || ret.buyerUid === user.uid);
+}

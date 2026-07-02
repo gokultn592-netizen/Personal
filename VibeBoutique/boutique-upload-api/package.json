@@ -1,12 +1,10 @@
 {
   "name": "boutique-upload-api",
   "version": "1.0.0",
-  "description": "Backblaze B2 Upload Bridge for Boutique Website",
+  "description": "ImageBB Upload Proxy for Boutique Website",
   "main": "api/upload-image.js",
   "scripts": {
     "start": "node api/upload-image.js"
   },
-  "dependencies": {
-    "backblaze-b2": "^1.7.0"
-  }
+  "dependencies": {}
 }

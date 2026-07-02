@@ -1,5 +1,3 @@
-const B2 = require("backblaze-b2");
-
 module.exports = async (req, res) => {
   // Enable CORS manually
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -17,79 +15,47 @@ module.exports = async (req, res) => {
 
   const { fileName, fileType, fileBase64 } = req.body;
 
-  if (!fileName || !fileBase64) {
-    return res.status(400).json({ error: "Missing required parameters: fileName, fileBase64" });
+  if (!fileBase64) {
+    return res.status(400).json({ error: "Missing required parameter: fileBase64" });
   }
 
-  // Retrieve environment variables
-  const { B2_APP_KEY_ID, B2_APP_KEY, B2_BUCKET_ID, B2_BUCKET_NAME, B2_DOWNLOAD_URL } = process.env;
-
-  // Development Fallback: If credentials are not set, return a mock Unsplash fashion photo
-  if (!B2_APP_KEY_ID || !B2_APP_KEY || !B2_BUCKET_ID || !B2_BUCKET_NAME) {
-    console.warn("B2 credentials are not set. Returning a mock photo for local development.");
-    const mockPhotos = [
-      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1539185441755-769473a23570?w=600&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1544441893-675973e31985?w=600&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=600&auto=format&fit=crop"
-    ];
-    const randomPhoto = mockPhotos[Math.floor(Math.random() * mockPhotos.length)];
-    
-    return res.status(200).json({
-      success: true,
-      imageUrl: randomPhoto,
-      fileName: `mock-${Date.now()}-${fileName.replace(/\s+/g, "_")}`,
-      isMock: true
-    });
+  // Use environment variable key, throw error if not configured
+  const apiKey = process.env.IMGBB_API_KEY;
+  if (!apiKey) {
+    console.error("Missing process.env.IMGBB_API_KEY environment configuration.");
+    return res.status(500).json({ error: "Server Configuration Error: Upload API key is missing." });
   }
 
   try {
-    const b2 = new B2({
-      applicationKeyId: B2_APP_KEY_ID,
-      applicationKey: B2_APP_KEY
+    // Construct urlencoded parameters for ImageBB API
+    const params = new URLSearchParams();
+    params.append("image", fileBase64);
+
+    // Call ImageBB upload endpoint
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+      method: "POST",
+      body: params,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      }
     });
 
-    // 1. Authorize B2 Account
-    await b2.authorize();
+    const result = await response.json();
 
-    // 2. Request upload token
-    const uploadUrlResponse = await b2.getUploadUrl({
-      bucketId: B2_BUCKET_ID
-    });
-    const { uploadUrl, authorizationToken } = uploadUrlResponse.data;
-
-    // 3. Convert base64 payload to binary buffer
-    const fileBuffer = Buffer.from(fileBase64, "base64");
-
-    // 4. Generate unique filename to avoid conflict overwrites
-    const uniqueFileName = `${Date.now()}-${fileName.replace(/\s+/g, "_")}`;
-
-    // 5. Upload file data
-    await b2.uploadFile({
-      uploadUrl: uploadUrl,
-      uploadAuthToken: authorizationToken,
-      fileName: uniqueFileName,
-      data: fileBuffer,
-      mime: fileType || "image/jpeg"
-    });
-
-    // 6. Build target asset URL
-    // Default format: https://f000.backblazeb2.com/file/bucketName/fileName
-    const publicUrl = B2_DOWNLOAD_URL
-      ? `${B2_DOWNLOAD_URL.replace(/\/$/, "")}/${uniqueFileName}`
-      : `https://f000.backblazeb2.com/file/${B2_BUCKET_NAME}/${uniqueFileName}`;
-
-    return res.status(200).json({
-      success: true,
-      imageUrl: publicUrl,
-      fileName: uniqueFileName
-    });
+    if (response.ok && result.success && result.data && result.data.url) {
+      return res.status(200).json({
+        success: true,
+        imageUrl: result.data.url,
+        fileName: fileName || `img-${Date.now()}`
+      });
+    } else {
+      throw new Error(result.error?.message || "ImageBB response failed");
+    }
 
   } catch (error) {
-    console.error("Backblaze B2 Upload Error: ", error);
+    console.error("ImageBB Proxy Upload Error: ", error);
     return res.status(500).json({
-      error: "B2 Upload failed",
+      error: "ImageBB Upload failed via proxy",
       details: error.message
     });
   }

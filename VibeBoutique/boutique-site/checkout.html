@@ -57,8 +57,25 @@
                 <input type="text" id="cust-name" class="form-input" placeholder="e.g. Jane Doe" required>
               </div>
               <div class="form-group">
+                <label style="font-weight: 600; margin-bottom: 0.3rem; display: block; font-family: var(--font-body);">Preferred Contact Channel *</label>
+                <div style="display: flex; gap: 1.5rem; margin-bottom: 0.5rem;">
+                  <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.9rem;">
+                    <input type="radio" name="contact-preference" value="whatsapp" checked style="accent-color: var(--accent-gold);">
+                    <span><i class="fab fa-whatsapp" style="color: var(--accent-green); margin-right: 2px;"></i> WhatsApp</span>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.9rem;">
+                    <input type="radio" name="contact-preference" value="instagram" style="accent-color: var(--accent-gold);">
+                    <span><i class="fab fa-instagram" style="color: var(--accent-gold); margin-right: 2px;"></i> Instagram</span>
+                  </label>
+                </div>
+              </div>
+              <div class="form-group" id="phone-group">
                 <label for="cust-phone">WhatsApp Mobile Number *</label>
-                <input type="tel" id="cust-phone" class="form-input" placeholder="e.g. +1 234 567 8900" required>
+                <input type="tel" id="cust-phone" class="form-input" placeholder="e.g. +91 98765 43210" required>
+              </div>
+              <div class="form-group" id="insta-group" style="display: none;">
+                <label for="cust-insta">Instagram Username *</label>
+                <input type="text" id="cust-insta" class="form-input" placeholder="e.g. username (without @)">
               </div>
               <div class="form-group">
                 <label for="cust-address">Delivery Address *</label>
@@ -123,9 +140,20 @@
       <div id="checkout-success-view" style="display: none; max-width: 600px; margin: 0 auto; text-align: center; padding: var(--spacing-xl) 0;">
         <i class="fas fa-circle-check" id="success-icon" style="font-size: 5rem; color: var(--accent-green); margin-bottom: var(--spacing-md);"></i>
         <h1 class="section-title" id="success-title" style="margin-bottom: var(--spacing-xs);">Order Placed!</h1>
-        <p class="text-muted" style="font-size: 1.1rem; margin-bottom: var(--spacing-md);">
+        <p class="text-muted" style="font-size: 1.1rem; margin-bottom: var(--spacing-sm);">
           Your order has been recorded with ID: <strong id="success-order-id" style="color: var(--text-primary);">#XXXXX</strong>.
         </p>
+
+        <!-- Save Order ID Notice -->
+        <div style="background: rgba(197, 168, 128, 0.1); border: 1px solid var(--accent-gold); border-radius: var(--radius-sm); padding: 0.8rem 1.2rem; margin: 0 auto var(--spacing-md); max-width: 480px; text-align: left; display: flex; align-items: flex-start; gap: 0.6rem;">
+          <i class="fas fa-bookmark" style="color: var(--accent-gold); font-size: 1.1rem; margin-top: 2px; flex-shrink: 0;"></i>
+          <div>
+            <strong style="font-size: 0.88rem; color: var(--text-primary); display: block; margin-bottom: 2px;">Save your Order ID!</strong>
+            <span style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
+              Please note down or screenshot your Order ID. You'll need it if you want to request a <a href="returns.html" style="color: var(--accent-gold); text-decoration: underline;">return or exchange</a> later.
+            </span>
+          </div>
+        </div>
         
         <!-- UPI Payment Card (Visible only when paymentMethod is 'upi') -->
         <div class="admin-card" id="upi-payment-card" style="display: none; background-color: var(--bg-secondary); border-color: var(--accent-gold-light); text-align: left; margin-bottom: var(--spacing-lg);">
@@ -177,7 +205,11 @@
           <div style="display: flex; flex-direction: column; gap: 0.75rem;">
             <!-- Confirm via WhatsApp -->
             <a id="whatsapp-confirm-btn" href="#" target="_blank" class="btn btn-green" style="width: 100%; display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
-              <i class="fab fa-whatsapp" style="font-size: 1.1rem;"></i> Confirm via WhatsApp
+              <i class="fab fa-whatsapp" style="font-size: 1.1rem;"></i> Confirm via WhatsApp (to Boutique)
+            </a>
+            <!-- Send Copy to Self via WhatsApp -->
+            <a id="whatsapp-confirm-self-btn" href="#" target="_blank" class="btn btn-secondary" style="width: 100%; display: flex; gap: 0.5rem; justify-content: center; align-items: center; border: 1px solid var(--accent-green); color: var(--accent-green);">
+              <i class="fab fa-whatsapp" style="font-size: 1.1rem;"></i> Send Copy to Yourself
             </a>
             <!-- Confirm via Instagram -->
             <button id="instagram-confirm-btn" class="btn btn-gold" style="width: 100%; display: flex; gap: 0.5rem; justify-content: center; align-items: center; border: 1px solid var(--accent-gold);">
@@ -226,9 +258,12 @@
           </div>
         </div>
 
-        <p style="font-size: 0.9rem;">
-          <a href="shop.html" style="text-decoration: underline; color: var(--text-primary); font-weight: 500;">Back to Shop Catalog</a>
-        </p>
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center; align-items: center; flex-wrap: wrap;">
+          <a href="cart.html" class="btn btn-pill" style="padding: 0.5rem 1.5rem; font-size: 0.82rem; background: var(--accent-gold); border-color: var(--accent-gold); color: var(--bg-dark); font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem;">
+            <i class="fas fa-history" style="font-size: 0.9rem;"></i> Track Order History
+          </a>
+          <a href="shop.html" style="text-decoration: underline; color: var(--text-primary); font-weight: 500; font-size: 0.88rem;">Back to Shop Catalog</a>
+        </div>
       </div>
 
     </div>
@@ -241,9 +276,8 @@
   <script type="module" src="js/main.js"></script>
   <script type="module">
     import { collection, addDoc, serverTimestamp, doc, runTransaction, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { db, isConfigured } from "./js/firebase-config.js";
-    import { appSettings } from "./js/main.js";
-    import { updateCartBadge } from "./js/main.js";
+    import { db, isConfigured, auth } from "./js/firebase-config.js";
+    import { appSettings, updateCartBadge } from "./js/main.js";
 
     let cart = [];
     let subtotal = 0;
@@ -252,6 +286,9 @@
     let lastPlacedOrderCustomerName = "";
     let lastPlacedOrderTotal = 0;
     let lastPlacedOrderPaymentMethod = "chat";
+    let lastPlacedOrderInstagram = "";
+    let lastPlacedOrderContactPreference = "whatsapp";
+    let lastPlacedOrderPhone = "";
 
     document.addEventListener("DOMContentLoaded", () => {
       // 1. Read Cart data
@@ -303,6 +340,29 @@
           cardChat.style.backgroundColor = "transparent";
         });
       }
+
+      // 5. Toggle Contact Preference fields
+      const radioWa = document.querySelector('input[name="contact-preference"][value="whatsapp"]');
+      const radioIg = document.querySelector('input[name="contact-preference"][value="instagram"]');
+      const phoneGroup = document.getElementById("phone-group");
+      const instaGroup = document.getElementById("insta-group");
+      const phoneInput = document.getElementById("cust-phone");
+      const instaInput = document.getElementById("cust-insta");
+
+      if (radioWa && radioIg && phoneGroup && instaGroup) {
+        radioWa.addEventListener("change", () => {
+          phoneGroup.style.display = "flex";
+          instaGroup.style.display = "none";
+          phoneInput.required = true;
+          instaInput.required = false;
+        });
+        radioIg.addEventListener("change", () => {
+          phoneGroup.style.display = "none";
+          instaGroup.style.display = "flex";
+          phoneInput.required = false;
+          instaInput.required = true;
+        });
+      }
     });
 
     function renderCheckoutSummary() {
@@ -336,6 +396,13 @@
       totalEl.textContent = `₹${subtotal.toFixed(2)}`;
     }
 
+    // If user is guest, show login gate on checkout load
+    window.addEventListener("authReady", (e) => {
+      if (!e.detail.user) {
+        import("./js/main.js").then(m => m.showSignInOverlay());
+      }
+    });
+
     async function handleCheckoutSubmit(e) {
       e.preventDefault();
 
@@ -345,16 +412,34 @@
         submitBtn.disabled = true;
       }
 
+      const activeUser = auth.currentUser;
+
+      if (!activeUser) {
+        alert("Please sign in to complete your checkout.");
+        import("./js/main.js").then(m => m.showSignInOverlay());
+        if (submitBtn) {
+          submitBtn.textContent = "Place Order & Confirm";
+          submitBtn.disabled = false;
+        }
+        return;
+      }
+
       // Collect customer details
       const customerName = document.getElementById("cust-name").value.trim();
-      const phone = document.getElementById("cust-phone").value.trim();
+      const contactPreference = document.querySelector('input[name="contact-preference"]:checked').value;
+      const phone = contactPreference === "whatsapp" ? document.getElementById("cust-phone").value.trim() : "";
+      const instagram = contactPreference === "instagram" ? document.getElementById("cust-insta").value.trim().replace(/@/g, "") : "";
       const address = document.getElementById("cust-address").value.trim();
       const notes = document.getElementById("cust-notes").value.trim();
       const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
 
       const orderData = {
+        buyerUid: activeUser.uid,
+        buyerEmail: activeUser.email || "guest@guest.com",
         customerName,
         phone,
+        instagram,
+        contactPreference,
         address,
         notes: notes || "",
         items: cart.map(item => ({
@@ -493,6 +578,9 @@
       lastPlacedOrderCustomerName = customerName;
       lastPlacedOrderTotal = subtotal;
       lastPlacedOrderPaymentMethod = paymentMethod;
+      lastPlacedOrderInstagram = instagram;
+      lastPlacedOrderContactPreference = contactPreference;
+      lastPlacedOrderPhone = phone;
 
       // Clear cart from localStorage
       localStorage.removeItem("boutique_cart");
@@ -504,6 +592,33 @@
       // Build success screen actions
       setupSuccessScreenActions();
       setupReorderWhatsAppLink();
+
+      // Toggle button displays on success screen based on preferred channel
+      const waConfirmBtn = document.getElementById("whatsapp-confirm-btn");
+      const waConfirmSelfBtn = document.getElementById("whatsapp-confirm-self-btn");
+      const igConfirmBtn = document.getElementById("instagram-confirm-btn");
+      const waCancelBtn = document.getElementById("whatsapp-cancel-notify-btn");
+      const igCancelBtn = document.getElementById("instagram-cancel-notify-btn");
+      const waReorderBtn = document.getElementById("whatsapp-reorder-btn");
+      const igReorderBtn = document.getElementById("instagram-reorder-btn");
+
+      if (contactPreference === "whatsapp") {
+        if (waConfirmBtn) waConfirmBtn.style.display = "flex";
+        if (waConfirmSelfBtn) waConfirmSelfBtn.style.display = "flex";
+        if (igConfirmBtn) igConfirmBtn.style.display = "none";
+        if (waCancelBtn) waCancelBtn.style.display = "flex";
+        if (igCancelBtn) igCancelBtn.style.display = "none";
+        if (waReorderBtn) waReorderBtn.style.display = "inline-flex";
+        if (igReorderBtn) igReorderBtn.style.display = "none";
+      } else {
+        if (waConfirmBtn) waConfirmBtn.style.display = "none";
+        if (waConfirmSelfBtn) waConfirmSelfBtn.style.display = "none";
+        if (igConfirmBtn) igConfirmBtn.style.display = "flex";
+        if (waCancelBtn) waCancelBtn.style.display = "none";
+        if (igCancelBtn) igCancelBtn.style.display = "flex";
+        if (waReorderBtn) waReorderBtn.style.display = "none";
+        if (igReorderBtn) igReorderBtn.style.display = "inline-flex";
+      }
 
       // Dynamic UPI Setup
       if (paymentMethod === "upi") {
@@ -607,7 +722,7 @@
     }
 
     function refreshMessagingLinks(orderId, customerName, phone, address, notes, paymentMethod, utrVal = "") {
-      let message = `*New Order from Joe Boutique!*\n`;
+      let message = `*New Order from ${appSettings.shopName}!*\n`;
       message += `Order ID: \`${orderId}\`\n\n`;
       message += `*Items:*\n`;
       
@@ -623,7 +738,11 @@
       }
       message += `\n*Delivery Info:*\n`;
       message += `- Name: ${customerName}\n`;
-      message += `- Phone: ${phone}\n`;
+      if (lastPlacedOrderContactPreference === "whatsapp") {
+        message += `- WhatsApp: ${phone}\n`;
+      } else {
+        message += `- Instagram: @${lastPlacedOrderInstagram}\n`;
+      }
       message += `- Address: ${address}\n`;
       if (notes) {
         message += `- Notes: ${notes}\n`;
@@ -636,9 +755,15 @@
       const waBtn = document.getElementById("whatsapp-confirm-btn");
       if (waBtn) waBtn.href = whatsappUrl;
 
+      // Set self confirmation link
+      const cleanPhone = phone.replace(/[\s\-\+\(\)]/g, "");
+      const whatsappSelfUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+      const waSelfBtn = document.getElementById("whatsapp-confirm-self-btn");
+      if (waSelfBtn) waSelfBtn.href = whatsappSelfUrl;
+
       // Update Instagram text copy template
       window.getOrderSummaryTextCustom = () => {
-        let msg = `Hello, I would like to confirm my Joe Boutique order!\n\n`;
+        let msg = `Hello, I would like to confirm my ${appSettings.shopName} order!\n\n`;
         msg += `Order ID: ${orderId}\n\n`;
         msg += `Items:\n`;
         lastPlacedOrderItems.forEach(item => {
@@ -650,7 +775,14 @@
         if (paymentMethod === 'upi') {
           msg += `UPI Ref (UTR): ${utrVal || 'Pending UTR Entry'}\n`;
         }
-        msg += `\nDelivery Name: ${customerName}`;
+        msg += `\nDelivery Info:\n`;
+        msg += `- Name: ${customerName}\n`;
+        if (lastPlacedOrderContactPreference === "whatsapp") {
+          msg += `- WhatsApp: ${phone}\n`;
+        } else {
+          msg += `- Instagram: @${lastPlacedOrderInstagram}\n`;
+        }
+        msg += `- Address: ${address}`;
         return msg;
       };
     }
@@ -714,6 +846,11 @@
           message += `\n*Total:* ₹${lastPlacedOrderTotal.toFixed(2)}\n\n`;
           message += `*Delivery Info:*\n`;
           message += `- Name: ${lastPlacedOrderCustomerName}\n`;
+          if (lastPlacedOrderContactPreference === "whatsapp") {
+            message += `- WhatsApp: ${lastPlacedOrderPhone}\n`;
+          } else {
+            message += `- Instagram: @${lastPlacedOrderInstagram}\n`;
+          }
           message += `Please confirm my order. Thank you!`;
 
           const encoded = encodeURIComponent(message);
@@ -725,9 +862,14 @@
     function setupCancelWhatsAppLink() {
       const whatsappCancelBtn = document.getElementById("whatsapp-cancel-notify-btn");
       if (whatsappCancelBtn) {
-        let message = `*Order Cancellation Notice from Joe Boutique!*\n\n`;
+        let message = `*Order Cancellation Notice from ${appSettings.shopName}!*\n\n`;
         message += `Order ID: \`${lastPlacedOrderId}\`\n`;
         message += `Customer Name: ${lastPlacedOrderCustomerName}\n`;
+        if (lastPlacedOrderContactPreference === "whatsapp") {
+          message += `WhatsApp: ${lastPlacedOrderPhone}\n`;
+        } else {
+          message += `Instagram: @${lastPlacedOrderInstagram}\n`;
+        }
         message += `Total: ₹${lastPlacedOrderTotal.toFixed(2)}\n\n`;
         message += `Please note I have cancelled this order. Thank you!`;
 
@@ -858,7 +1000,7 @@
 
     function getOrderSummaryText() {
       if (window.getOrderSummaryTextCustom) return window.getOrderSummaryTextCustom();
-      let message = `Hello, I would like to confirm my Joe Boutique order!\n\n`;
+      let message = `Hello, I would like to confirm my ${appSettings.shopName} order!\n\n`;
       message += `Order ID: ${lastPlacedOrderId}\n\n`;
       message += `Items:\n`;
       lastPlacedOrderItems.forEach(item => {
@@ -866,14 +1008,25 @@
         message += `- ${item.qty}x ${item.name} ${variantDesc ? `(${variantDesc})` : ''} - ₹${(item.price * item.qty).toFixed(2)}\n`;
       });
       message += `\nTotal: ₹${lastPlacedOrderTotal.toFixed(2)}\n\n`;
-      message += `Delivery Name: ${lastPlacedOrderCustomerName}`;
+      message += `Delivery Info:\n`;
+      message += `- Name: ${lastPlacedOrderCustomerName}\n`;
+      if (lastPlacedOrderContactPreference === "whatsapp") {
+        message += `- WhatsApp: ${lastPlacedOrderPhone}\n`;
+      } else {
+        message += `- Instagram: @${lastPlacedOrderInstagram}\n`;
+      }
       return message;
     }
 
     function getCancellationText() {
-      let message = `Hello, I would like to cancel my order from Joe Boutique.\n\n`;
+      let message = `Hello, I would like to cancel my order from ${appSettings.shopName}.\n\n`;
       message += `Order ID: ${lastPlacedOrderId}\n`;
       message += `Customer Name: ${lastPlacedOrderCustomerName}\n`;
+      if (lastPlacedOrderContactPreference === "whatsapp") {
+        message += `WhatsApp: ${lastPlacedOrderPhone}\n`;
+      } else {
+        message += `Instagram: @${lastPlacedOrderInstagram}\n`;
+      }
       message += `Order Total: ₹${lastPlacedOrderTotal.toFixed(2)}`;
       return message;
     }
@@ -885,7 +1038,13 @@
         message += `- ${item.qty}x ${item.name} ${variantDesc ? `(${variantDesc})` : ''} - ₹${(item.price * item.qty).toFixed(2)}\n`;
       });
       message += `\nTotal: ₹${lastPlacedOrderTotal.toFixed(2)}\n\n`;
-      message += `Delivery Name: ${lastPlacedOrderCustomerName}`;
+      message += `Delivery Info:\n`;
+      message += `- Name: ${lastPlacedOrderCustomerName}\n`;
+      if (lastPlacedOrderContactPreference === "whatsapp") {
+        message += `- WhatsApp: ${lastPlacedOrderPhone}\n`;
+      } else {
+        message += `- Instagram: @${lastPlacedOrderInstagram}\n`;
+      }
       return message;
     }
 

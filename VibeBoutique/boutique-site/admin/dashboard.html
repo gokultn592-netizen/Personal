@@ -36,6 +36,7 @@
       <div style="margin-bottom: var(--spacing-md);">
         <div class="admin-tabs">
           <button class="admin-tab-btn active" data-tab="orders">Orders (<span id="orders-count">0</span>)</button>
+          <button class="admin-tab-btn" data-tab="returns">Returns (<span id="returns-count">0</span>)</button>
           <button class="admin-tab-btn" data-tab="products">Products (<span id="products-count">0</span>)</button>
           <button class="admin-tab-btn" data-tab="settings">Store Settings</button>
         </div>
@@ -96,6 +97,32 @@
         </div>
       </div>
 
+      <!-- Tab View: Returns -->
+      <div id="tab-returns" class="admin-tab-content" style="display: none;">
+        <div class="admin-card">
+          <h2 class="admin-card-title">Return & Exchange Requests</h2>
+          <div style="overflow-x: auto;">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Return ID</th>
+                  <th>Date</th>
+                  <th>Customer</th>
+                  <th>Order ID</th>
+                  <th>Product</th>
+                  <th>Type</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="returns-table-body">
+                <!-- Injected by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- Tab View: Settings -->
       <div id="tab-settings" class="admin-tab-content" style="display: none;">
         <div class="admin-card" style="max-width: 600px;">
@@ -106,8 +133,9 @@
             </div>
             
             <div class="form-group">
-              <label for="settings-shop-name">Store Name (Read-Only)</label>
-              <input type="text" id="settings-shop-name" class="form-input" placeholder="e.g. Joe Boutique" readonly style="background-color: var(--bg-secondary); cursor: not-allowed; border-color: var(--border-color); color: var(--text-muted);">
+              <label for="settings-shop-name">Store Name *</label>
+              <input type="text" id="settings-shop-name" class="form-input" placeholder="e.g. Joe Boutique" required>
+              <span class="text-muted" style="font-size: 0.75rem;">This name will appear in the navbar, footer, page titles, and chat widget across all pages.</span>
             </div>
             
             <div class="form-group">
@@ -227,6 +255,9 @@
 
       // Render products table
       renderProductsTable();
+
+      // Load returns
+      loadReturns();
     }
 
     async function loadRealFirebaseProducts() {
@@ -296,6 +327,8 @@
               id: "MOCK-ORD-74A",
               customerName: "Alice Wonderland",
               phone: "+91 98765 43210",
+              instagram: "",
+              contactPreference: "whatsapp",
               address: "777 Cheshire Lane, Forest Hill",
               notes: "Call when outside please.",
               items: [
@@ -311,6 +344,8 @@
               id: "MOCK-ORD-12C",
               customerName: "Bob Smith",
               phone: "+91 99988 77766",
+              instagram: "",
+              contactPreference: "whatsapp",
               address: "42 Wallaby Way, Sydney",
               notes: "",
               items: [
@@ -440,9 +475,13 @@
           return `• ${item.qty}x ${item.name} ${varDesc ? `(${varDesc})` : ''}`;
         }).join("<br>");
 
+        const isInstagram = order.contactPreference === "instagram";
         const contactDetails = `
           <strong>${order.customerName}</strong><br>
-          <span style="font-size:0.85rem;">Phone: ${order.phone}</span><br>
+          ${isInstagram 
+            ? `<span style="font-size:0.85rem; color: var(--accent-gold); font-weight: 500;"><i class="fab fa-instagram"></i> @${order.instagram}</span>` 
+            : `<span style="font-size:0.85rem;"><i class="fab fa-whatsapp" style="color: var(--accent-green);"></i> ${order.phone}</span>`
+          }<br>
           <span style="font-size:0.8rem; color:var(--text-muted);">${order.address}</span>
           ${order.notes ? `<br><em style="font-size:0.8rem; color:#A34E4E;">Note: ${order.notes}</em>` : ''}
         `;
@@ -476,9 +515,14 @@
               </select>
             </td>
             <td>
-              <button class="btn btn-secondary trigger-wa-btn" data-id="${order.id}" data-index="${idx}" style="padding: 0.35rem 0.6rem; font-size: 0.75rem;">
-                <i class="fab fa-whatsapp"></i> Chat
-              </button>
+              ${isInstagram 
+                ? `<button class="btn btn-secondary trigger-chat-btn" data-id="${order.id}" data-index="${idx}" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; border: 1px solid var(--accent-gold); color: var(--accent-gold); display: flex; gap: 0.3rem; align-items: center;">
+                    <i class="fab fa-instagram"></i> DM
+                   </button>`
+                : `<button class="btn btn-secondary trigger-chat-btn" data-id="${order.id}" data-index="${idx}" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; background-color: var(--accent-green); color: white; border: 1px solid var(--accent-green); display: flex; gap: 0.3rem; align-items: center;">
+                    <i class="fab fa-whatsapp"></i> Chat
+                   </button>`
+              }
             </td>
           </tr>
         `;
@@ -497,11 +541,16 @@
         });
       });
 
-      // Bind WhatsApp text launcher
-      document.querySelectorAll(".trigger-wa-btn").forEach(btn => {
+      // Bind customer chat buttons
+      document.querySelectorAll(".trigger-chat-btn").forEach(btn => {
         btn.addEventListener("click", (e) => {
           const idx = parseInt(btn.getAttribute("data-index"));
-          openCustomerChat(ordersList[idx]);
+          const order = ordersList[idx];
+          if (order.contactPreference === "instagram") {
+            openCustomerInstagramChat(order);
+          } else {
+            openCustomerChat(order);
+          }
         });
       });
     }
@@ -525,12 +574,53 @@
 
     function openCustomerChat(order) {
       const cleanPhone = order.phone.replace(/[\s\-\+\(\)]/g, "");
-      let message = `Hello ${order.customerName}, this is Joe Boutique. `;
+      const shopName = document.getElementById("settings-shop-name")?.value || defaultSettings.shopName;
+      let message = `Hello ${order.customerName}, this is ${shopName}. `;
       message += `Regarding your order #${order.id} totaling ₹${order.total.toFixed(2)}: `;
       message += `Your order status is currently: *${order.status.toUpperCase()}*.`;
       
       const encoded = encodeURIComponent(message);
       window.open(`https://wa.me/${cleanPhone}?text=${encoded}`, "_blank");
+    }
+
+    function openCustomerInstagramChat(order) {
+      const shopName = document.getElementById("settings-shop-name")?.value || defaultSettings.shopName;
+      let message = `Hello ${order.customerName}, this is ${shopName}.\n\n`;
+      message += `Regarding your order #${order.id} totaling ₹${order.total.toFixed(2)}:\n`;
+      message += `Your order status is currently: ${order.status.toUpperCase()}.`;
+      
+      copyToClipboard(message, "Order status update message copied to clipboard!");
+      window.open(`https://ig.me/m/${order.instagram}`, "_blank");
+    }
+
+    function copyToClipboard(text, successMessage) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          alert(successMessage + "\n\nWe are now redirecting you to Instagram to paste and send the message!");
+        }).catch(err => {
+          console.error("Clipboard copy failed: ", err);
+          fallbackCopyText(text);
+          alert(successMessage + "\n\nWe are now redirecting you to Instagram to paste and send the message!");
+        });
+      } else {
+        fallbackCopyText(text);
+        alert(successMessage + "\n\nWe are now redirecting you to Instagram to paste and send the message!");
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+      } catch (err) {
+        console.error('Fallback copy failed', err);
+      }
+      document.body.removeChild(textArea);
     }
 
     // Render Products Catalog
@@ -563,10 +653,19 @@
             <td style="font-family: var(--font-heading); font-weight:600;">₹${Number(prod.price).toFixed(2)}</td>
             <td>
               ${(() => {
+                let stockStatusHtml = "";
+                if (prod.stock <= 0) {
+                  stockStatusHtml = `<span style="padding: 0.15rem 0.4rem; font-size: 0.7rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.2rem; background: rgba(239,68,68,0.12); color: #ef4444; font-weight: 600;"><i class="fas fa-ban"></i> Out of Stock</span>`;
+                } else if (prod.stock < 5) {
+                  stockStatusHtml = `<span style="padding: 0.15rem 0.4rem; font-size: 0.7rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.2rem; background: rgba(234,179,8,0.12); color: #eab308; font-weight: 600;"><i class="fas fa-triangle-exclamation"></i> Low Stock (${prod.stock})</span>`;
+                } else {
+                  stockStatusHtml = `<span style="font-weight: 500; font-size: 0.85rem;">${prod.stock} Units</span>`;
+                }
+
                 if (prod.sizesStock && Object.keys(prod.sizesStock).length > 0) {
                   const sizeBreakdown = Object.entries(prod.sizesStock)
                     .map(([size, val]) => {
-                      const color = val === 0 ? '#A34E4E' : (val <= 3 ? '#C5A880' : 'inherit');
+                      const color = val === 0 ? '#ef4444' : (val < 3 ? '#eab308' : 'inherit');
                       const weight = val === 0 ? '600' : '400';
                       return `<span style="color: ${color}; font-weight: ${weight};" title="${size} Stock">${size}: ${val}</span>`;
                     })
@@ -575,14 +674,10 @@
                     <div style="font-size: 0.85rem; font-family: var(--font-body); font-weight: 500; margin-bottom: 2px; white-space: nowrap;">
                       ${sizeBreakdown}
                     </div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted);">Total: ${prod.stock} Units</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.3rem;">Total: ${stockStatusHtml}</div>
                   `;
                 } else {
-                  return `
-                    <span style="font-weight: 500; color: ${prod.stock <= 0 ? '#A34E4E' : (prod.stock <= 3 ? '#C5A880' : 'inherit')}">
-                      ${prod.stock <= 0 ? 'Out of Stock' : `${prod.stock} Units`}
-                    </span>
-                  `;
+                  return stockStatusHtml;
                 }
               })()}
             </td>
@@ -748,6 +843,119 @@
         console.warn("AudioContext chime blocked by browser policies until user interacts", err);
       }
     }
+
+    // ===== RETURNS MANAGEMENT =====
+    let returnsList = [];
+
+    async function loadReturns() {
+      if (isConfigured) {
+        try {
+          const q = query(collection(db, "returns"), orderBy("createdAt", "desc"));
+          onSnapshot(q, (snapshot) => {
+            returnsList = [];
+            snapshot.forEach(doc => {
+              returnsList.push({ id: doc.id, ...doc.data() });
+            });
+            renderReturnsTable();
+          });
+        } catch (e) {
+          console.error("Error loading returns from Firestore:", e);
+          loadMockReturns();
+        }
+      } else {
+        loadMockReturns();
+        // Poll mock returns every 3 seconds
+        setInterval(() => {
+          loadMockReturns();
+        }, 3000);
+      }
+    }
+
+    function loadMockReturns() {
+      returnsList = JSON.parse(localStorage.getItem("boutique_mock_returns") || "[]");
+      renderReturnsTable();
+    }
+
+    function renderReturnsTable() {
+      const tbody = document.getElementById("returns-table-body");
+      const countEl = document.getElementById("returns-count");
+      if (countEl) countEl.textContent = returnsList.length;
+
+      if (!tbody) return;
+
+      if (returnsList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted" style="padding: 2rem;">No return requests yet.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = returnsList.map((ret, idx) => {
+        let dateStr = "—";
+        if (ret.createdAt) {
+          const d = ret.createdAt.seconds
+            ? new Date(ret.createdAt.seconds * 1000)
+            : new Date(ret.createdAt);
+          dateStr = d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+        }
+
+        const typeBadge = ret.type === "exchange"
+          ? `<span style="background: rgba(59,130,246,0.15); color: #3b82f6; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">Exchange</span>`
+          : `<span style="background: rgba(239,68,68,0.12); color: #ef4444; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">Return</span>`;
+
+        const statusColors = {
+          pending: "background: rgba(234,179,8,0.12); color: #eab308;",
+          approved: "background: rgba(34,197,94,0.12); color: #22c55e;",
+          rejected: "background: rgba(239,68,68,0.12); color: #ef4444;",
+          completed: "background: rgba(59,130,246,0.15); color: #3b82f6;"
+        };
+        const statusStyle = statusColors[ret.status] || statusColors.pending;
+
+        return `
+          <tr>
+            <td style="font-family: var(--font-heading); font-size: 0.8rem;">${ret.id ? ret.id.substring(0, 12) : '—'}</td>
+            <td>${dateStr}</td>
+            <td>
+              <strong>${ret.customerName || '—'}</strong><br>
+              <span class="text-muted" style="font-size: 0.78rem;">${ret.phone || '—'}</span>
+            </td>
+            <td style="font-family: var(--font-heading); font-size: 0.8rem;">${ret.orderId || '—'}</td>
+            <td style="max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${ret.product || ''}">${ret.product || '—'}</td>
+            <td>${typeBadge}</td>
+            <td style="max-width: 180px; font-size: 0.82rem;" title="${ret.reason || ''}">${ret.reason || '—'}${ret.notes ? '<br><span class="text-muted" style="font-size:0.75rem;">Notes: ' + ret.notes + '</span>' : ''}</td>
+            <td>
+              <select class="form-input" data-return-id="${ret.id}" data-return-idx="${idx}" style="padding: 0.3rem 0.5rem; font-size: 0.78rem; min-width: 100px; ${statusStyle}" onchange="handleReturnStatusChange(this)">
+                <option value="pending" ${ret.status === 'pending' ? 'selected' : ''}>Pending</option>
+                <option value="approved" ${ret.status === 'approved' ? 'selected' : ''}>Approved</option>
+                <option value="rejected" ${ret.status === 'rejected' ? 'selected' : ''}>Rejected</option>
+                <option value="completed" ${ret.status === 'completed' ? 'selected' : ''}>Completed</option>
+              </select>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    window.handleReturnStatusChange = async function(sel) {
+      const returnId = sel.getAttribute("data-return-id");
+      const idx = parseInt(sel.getAttribute("data-return-idx"));
+      const newStatus = sel.value;
+
+      if (isConfigured) {
+        try {
+          await updateDoc(doc(db, "returns", returnId), { status: newStatus });
+        } catch (e) {
+          console.error("Error updating return status:", e);
+          alert("Failed to update return status.");
+        }
+      } else {
+        let savedReturns = JSON.parse(localStorage.getItem("boutique_mock_returns") || "[]");
+        if (savedReturns[idx]) {
+          savedReturns[idx].status = newStatus;
+          localStorage.setItem("boutique_mock_returns", JSON.stringify(savedReturns));
+          returnsList = savedReturns;
+          renderReturnsTable();
+        }
+      }
+    };
   </script>
 </body>
 </html>

@@ -6,84 +6,248 @@
   <title>Joe Boutique — Curated Premium Storefront</title>
   <meta name="description" content="Browse and shop high-quality clothing and luxury accessories selected for your custom vibe. Check out securely via WhatsApp.">
   <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
+</head><body>
 
   <!-- Premium Header injected by main.js -->
   <header></header>
 
-  <!-- Hero Banner -->
-  <section class="hero">
-    <div class="hero-overlay"></div>
-    <div class="container hero-content">
-      <h2 class="hero-title" style="font-family: var(--font-heading);">
-        Express Your <br><span style="color: var(--accent-gold); font-style: italic;">Unspoken</span> Vibe.
-      </h2>
-      <p class="hero-description">
-        Curating limited-run styles, hand-crafted materials, and unique aesthetics for the contemporary wardrobe.
-      </p>
-      <div class="hero-actions">
-        <a href="shop.html" class="btn btn-primary">Explore Catalog</a>
-        <a href="shop.html?filter=new" class="btn btn-secondary">New Arrivals</a>
+  <!-- Editorial Hero Banner -->
+  <section class="hero-editorial">
+    <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&auto=format&fit=crop&q=80" fetchpriority="high" class="hero-bg-img" alt="Editorial Fashion Banner">
+    <div class="hero-overlay-editorial"></div>
+    <div class="container" style="position: relative; z-index: 2; width: 100%;">
+      <div class="hero-content">
+        <h1 class="hero-title-editorial" style="font-size: 5rem; font-weight: 700; line-height: 0.95; letter-spacing: -0.01em; text-transform: uppercase;">
+          WEAR YOUR<br>
+          <span style="font-weight: 800; color: var(--accent-gold);">CONFIDENCE</span>
+        </h1>
+        <p class="hero-description" style="margin-bottom: var(--spacing-lg); max-width: 500px; font-size: 1.15rem; line-height: 1.6; color: var(--text-muted);">
+          Trendy pieces. Timeless style. Joe Boutique has everything you need to look and feel your best.
+        </p>
+        <div class="hero-actions">
+          <a href="shop.html" class="btn btn-primary btn-pill">SHOP NEW IN</a>
+          <a href="#collections" class="btn btn-secondary btn-pill">EXPLORE COLLECTIONS</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust Strip -->
+  <section class="trust-strip">
+    <div class="container">
+      <div class="trust-grid">
+
+        <a href="returns.html" class="trust-card" style="text-decoration: none; color: inherit;">
+          <i class="fas fa-rotate-left"></i>
+          <div>
+            <h4>Easy Returns</h4>
+            <p>7-day hassle-free exchange policy</p>
+          </div>
+        </a>
+        <div class="trust-card">
+          <i class="fas fa-wallet"></i>
+          <div>
+            <h4>Secure UPI Pay</h4>
+            <p>Instant direct-bank online verification</p>
+          </div>
+        </div>
+        <div class="trust-card">
+          <i class="fas fa-comments"></i>
+          <div>
+            <h4>Chat to Order</h4>
+            <p>Personal assistance on WhatsApp & Instagram</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- Admin Portal Banner — injected by JS only for admin role -->
-  <div id="admin-portal-banner" style="display:none; background: linear-gradient(135deg, #1C1C1C 0%, #2A2A2A 100%); border-bottom: 2px solid #C5A880;">
+  <div id="admin-portal-banner" style="display:none; background: linear-gradient(135deg, #1C1C1C 0%, #2A2A2A 100%); border-bottom: 2px solid var(--accent-gold);">
     <div class="container" style="padding: 1.25rem var(--spacing-md); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
       <div style="display: flex; align-items: center; gap: 1rem;">
-        <i class="fas fa-shield-halved" style="font-size: 1.4rem; color: #C5A880;"></i>
+        <i class="fas fa-shield-halved" style="font-size: 1.4rem; color: var(--accent-gold);"></i>
         <div>
           <div style="color: #FAF9F6; font-weight: 600; font-size: 0.95rem;">Admin Portal</div>
           <div style="color: #8C8C8C; font-size: 0.8rem;">Manage your catalog, orders, and store settings</div>
         </div>
       </div>
-      <a href="admin/dashboard.html" class="btn" style="background: #C5A880; color: #1C1C1C; border: none; padding: 0.6rem 1.5rem; font-size: 0.85rem; font-weight: 600;">
+      <a href="admin/dashboard.html" class="btn" style="background: var(--accent-gold); color: var(--bg-dark); border: none; padding: 0.6rem 1.5rem; font-size: 0.85rem; font-weight: 600;">
         Open Dashboard &rarr;
       </a>
     </div>
   </div>
 
-  <!-- Dynamic Featured Section -->
-  <section class="section">
+  <!-- Shop by Category circles -->
+  <section class="section" style="padding-top: 1rem; padding-bottom: 1rem;">
     <div class="container">
-      <div class="text-center" style="margin-bottom: var(--spacing-lg);">
-        <p class="section-subtitle">The Curated Line</p>
-        <h2 class="section-title">Featured Pieces</h2>
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--spacing-md);">
+        <h2 class="section-title" style="font-size: 1.5rem; margin: 0; letter-spacing: 0.05em;">SHOP BY CATEGORY</h2>
+        <a href="shop.html" class="collection-tall-link" style="font-size: 0.75rem;">View all &rarr;</a>
       </div>
       
-      <!-- Injected by products.js -->
-      <div id="featured-products-grid" class="product-grid">
-        <div class="text-center text-muted" style="grid-column: 1 / -1; padding: var(--spacing-lg) 0;">
-          <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: var(--spacing-sm);"></i>
-          <p>Loading featured pieces...</p>
-        </div>
-      </div>
-
-      <div class="text-center" style="margin-top: var(--spacing-lg);">
-        <a href="shop.html" class="btn btn-secondary">View All Styles</a>
+      <div class="category-row-wrapper">
+        <a href="shop.html?category=Garments" class="category-circle-item">
+          <div class="category-circle-img-wrap">
+            <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&auto=format&fit=crop" alt="Tops">
+          </div>
+          <span class="category-circle-label">Tops</span>
+        </a>
+        <a href="shop.html?category=Tailoring" class="category-circle-item">
+          <div class="category-circle-img-wrap">
+            <img src="https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=300&auto=format&fit=crop" alt="Bottoms">
+          </div>
+          <span class="category-circle-label">Bottoms</span>
+        </a>
+        <a href="shop.html?category=Lounge" class="category-circle-item">
+          <div class="category-circle-img-wrap">
+            <img src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=300&auto=format&fit=crop" alt="Dresses">
+          </div>
+          <span class="category-circle-label">Dresses</span>
+        </a>
+        <a href="shop.html?category=Shoes" class="category-circle-item">
+          <div class="category-circle-img-wrap">
+            <img src="https://images.unsplash.com/photo-1539185441755-769473a23570?w=300&auto=format&fit=crop" alt="Shoes">
+          </div>
+          <span class="category-circle-label">Shoes</span>
+        </a>
+        <a href="shop.html?category=Accessories" class="category-circle-item">
+          <div class="category-circle-img-wrap">
+            <img src="https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=300&auto=format&fit=crop" alt="Accessories">
+          </div>
+          <span class="category-circle-label">Accessories</span>
+        </a>
+        <a href="shop.html?category=Tailoring" class="category-circle-item">
+          <div class="category-circle-img-wrap">
+            <img src="https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=300&auto=format&fit=crop" alt="Men">
+          </div>
+          <span class="category-circle-label">Men</span>
+        </a>
+        <a href="shop.html?filter=sale" class="category-circle-item">
+          <div class="sale-badge-circle" style="background-color: var(--bg-dark); color: var(--accent-gold); border: 2px solid var(--accent-gold); box-shadow: none;">
+            SALE
+            <span style="color: var(--text-muted); font-size: 0.55rem; letter-spacing: 0.1em;">Up to 40%</span>
+          </div>
+          <span class="category-circle-label" style="color: var(--accent-gold);">Offers</span>
+        </a>
       </div>
     </div>
   </section>
 
-  <!-- Value Statement -->
-  <section class="section" style="background-color: var(--bg-secondary); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
-    <div class="container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--spacing-lg); text-align: center;">
-      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
-        <i class="fas fa-gem" style="font-size: 2rem; color: var(--accent-gold);"></i>
-        <h3 style="font-size: 1.2rem; font-family: var(--font-body); font-weight: 600;">Premium Materials</h3>
-        <p class="text-muted" style="font-size: 0.9rem;">We source premium cotton, silk, and sustainable fibers to build items that last.</p>
+  <section class="section" style="padding-top: 2rem;">
+    <div class="container">
+      <div class="section-header-flex">
+        <div>
+          <h2 class="section-title" style="font-size: 1.8rem; margin: 0; font-family: var(--font-heading); text-transform: uppercase;">NEW ARRIVALS</h2>
+          <p class="section-subtitle" style="margin: 4px 0 0 0; text-transform: none; letter-spacing: normal; font-size: 0.9rem; color: var(--text-muted);">Fresh styles. Just in.</p>
+        </div>
+        <div class="flex-center-gap">
+          <a href="shop.html" class="collection-tall-link" style="font-size: 0.85rem; font-weight: 500;">View all</a>
+          <div class="carousel-arrows flex-row-gap-sm">
+            <button class="arrow-btn" aria-label="Previous" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"><i class="fas fa-chevron-left" style="font-size: 0.75rem;"></i></button>
+            <button class="arrow-btn" aria-label="Next" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"><i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i></button>
+          </div>
+        </div>
       </div>
-      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
-        <i class="fas fa-truck-fast" style="font-size: 2rem; color: var(--accent-gold);"></i>
-        <h3 style="font-size: 1.2rem; font-family: var(--font-body); font-weight: 600;">Fast Order Confirmation</h3>
-        <p class="text-muted" style="font-size: 0.9rem;">Check out instantly in our browser, and finalize delivery steps directly via WhatsApp.</p>
+      
+      <!-- Injected by products.js / inline scripts -->
+      <div id="featured-products-grid" class="product-grid">
+        <div class="spinner-container">
+          <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-gold);"></i>
+          <p>Loading curated collection...</p>
+        </div>
       </div>
-      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
-        <i class="fas fa-leaf" style="font-size: 2rem; color: var(--accent-gold);"></i>
-        <h3 style="font-size: 1.2rem; font-family: var(--font-body); font-weight: 600;">Ethically Curated</h3>
-        <p class="text-muted" style="font-size: 0.9rem;">Every partner studio operates under fair-wage standards and ethical workspaces.</p>
+    </div>
+  </section>
+
+  <!-- Promo Banner Row -->
+  <section class="section" style="padding-top: 1rem; padding-bottom: 1rem;">
+    <div class="container">
+      <div class="promo-row-grid">
+
+        <a href="shop.html" class="promo-tile">
+          <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=500&auto=format&fit=crop" class="promo-tile-img" alt="Promo 2">
+          <div class="promo-tile-content-flex">
+            <span class="promo-subtitle">NEW SEASON</span>
+            <h3 class="promo-title">NEW LOOK</h3>
+            <p class="promo-desc">Discover the latest trends curated for your vibe.</p>
+            <span class="collection-tall-link promo-title-link">SHOP NOW &rarr;</span>
+          </div>
+        </a>
+        <div class="promo-tile" id="talk-to-owner-tile" style="cursor: default;">
+          <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=500&auto=format&fit=crop" class="promo-tile-img" alt="Promo 3">
+          <div class="promo-tile-content-flex">
+            <span class="promo-subtitle">DIRECT ASSISTANCE</span>
+            <h3 class="promo-title">TALK TO OWNER</h3>
+            <p class="promo-desc">Find your style with personalized chat assistance.</p>
+            <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+              <a id="promo-wa-chat" href="#" target="_blank" class="btn btn-pill" style="width: fit-content; padding: 0.45rem 1.2rem; font-size: 0.72rem; background: var(--accent-gold); color: var(--bg-dark); border: 1px solid var(--accent-gold); display: flex; align-items: center; gap: 0.4rem; font-weight: 600; transition: all var(--transition-fast);">
+                <i class="fab fa-whatsapp" style="font-size: 0.85rem;"></i> WhatsApp
+              </a>
+              <a id="promo-ig-chat" href="#" target="_blank" class="btn btn-pill" style="width: fit-content; padding: 0.45rem 1.2rem; font-size: 0.72rem; background: rgba(255, 255, 255, 0.1); color: #FAF9F6; border: 1px solid rgba(255, 255, 255, 0.25); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; gap: 0.4rem; font-weight: 600; transition: all var(--transition-fast);">
+                <i class="fab fa-instagram" style="font-size: 0.85rem;"></i> Instagram
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Explore Collections Section -->
+  <section class="section" id="collections" style="padding-top: 1rem; padding-bottom: var(--spacing-xl);">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--spacing-lg);">
+        <div style="text-align: left;">
+          <h2 class="section-title" style="font-size: 1.8rem; margin: 0; font-family: var(--font-heading); text-transform: uppercase;">EXPLORE COLLECTIONS</h2>
+          <p class="section-subtitle" style="margin: 4px 0 0 0; text-transform: none; letter-spacing: normal; font-size: 0.9rem; color: var(--text-muted);">Handpicked styles for every vibe.</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <a href="shop.html" class="collection-tall-link" style="font-size: 0.85rem; font-weight: 500;">View all</a>
+          <div class="carousel-arrows" style="display: flex; gap: 8px;">
+            <button class="arrow-btn" aria-label="Previous" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"><i class="fas fa-chevron-left" style="font-size: 0.75rem;"></i></button>
+            <button class="arrow-btn" aria-label="Next" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"><i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i></button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="collections-scroller">
+        <div class="collection-tall-card">
+          <img src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&auto=format&fit=crop" class="collection-tall-img" alt="Collection 1">
+          <div class="collection-scrim"></div>
+          <div class="collection-tall-content">
+            <h3 class="collection-tall-title">The Everyday Edit</h3>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Effortless pieces for daily luxury.</p>
+            <a href="shop.html?category=Lounge" class="collection-tall-link">Shop Collection &rarr;</a>
+          </div>
+        </div>
+        <div class="collection-tall-card">
+          <img src="https://images.unsplash.com/photo-1485230895905-ec40ba36b9bc?w=600&auto=format&fit=crop" class="collection-tall-img" alt="Collection 2">
+          <div class="collection-scrim"></div>
+          <div class="collection-tall-content">
+            <h3 class="collection-tall-title">Weekend Vibes</h3>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Relaxed styles for your downtime.</p>
+            <a href="shop.html?category=Garments" class="collection-tall-link">Shop Collection &rarr;</a>
+          </div>
+        </div>
+        <div class="collection-tall-card">
+          <img src="https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=600&auto=format&fit=crop" class="collection-tall-img" alt="Collection 3">
+          <div class="collection-scrim"></div>
+          <div class="collection-tall-content">
+            <h3 class="collection-tall-title">Date Night</h3>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Seductive silhouettes and dark tones.</p>
+            <a href="shop.html?category=Eveningwear" class="collection-tall-link">Shop Collection &rarr;</a>
+          </div>
+        </div>
+        <div class="collection-tall-card">
+          <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=600&auto=format&fit=crop" class="collection-tall-img" alt="Collection 4">
+          <div class="collection-scrim"></div>
+          <div class="collection-tall-content">
+            <h3 class="collection-tall-title">Power Fashion</h3>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">Tailored fit and sharp profiles.</p>
+            <a href="shop.html?category=Tailoring" class="collection-tall-link">Shop Collection &rarr;</a>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -101,6 +265,19 @@
         if (banner) banner.style.display = "block";
       }
     });
+
+    // Wire up Talk to Owner chat buttons with stored settings
+    import { appSettings } from "./js/main.js";
+
+    function updatePromoChatLinks() {
+      const waBtn = document.getElementById("promo-wa-chat");
+      const igBtn = document.getElementById("promo-ig-chat");
+      if (waBtn) waBtn.href = `https://wa.me/${appSettings.whatsappNumber}?text=${encodeURIComponent("Hi! I'd like to chat with the owner for personalized styling help.")}`;
+      if (igBtn) igBtn.href = `https://ig.me/m/${appSettings.instagramId}`;
+    }
+
+    document.addEventListener("DOMContentLoaded", updatePromoChatLinks);
+    window.addEventListener("settingsLoaded", updatePromoChatLinks);
   </script>
   <script type="module">
     import { collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -153,26 +330,41 @@
         console.error("Error loading featured products:", error);
         renderMockFeaturedProducts(grid);
       }
-    }
-
-    function renderSnapshot(container, snapshot) {
+       function renderSnapshot(container, snapshot) {
       let html = "";
+      const wishlist = JSON.parse(localStorage.getItem("boutique_wishlist") || "[]");
       snapshot.forEach(doc => {
         const product = doc.data();
         const productId = doc.id;
         const outOfStock = product.stock <= 0;
+        const colors = product.colors || [];
+        const swatchesHtml = colors.map((col, cIdx) => {
+          const imgUrl = (product.colorImages && product.colorImages[col]) || product.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop';
+          const resolvedColor = window.getColorHex ? window.getColorHex(col) : col;
+          return `
+            <span class="swatch-dot ${cIdx === 0 ? 'active' : ''}" style="background-color: ${resolvedColor};" data-img="${window.escapeHtml(imgUrl)}" onclick="event.preventDefault(); event.stopPropagation(); window.swapCardImage(this);" title="${window.escapeHtml(col)}"></span>
+          `;
+        }).join('');
+        
+        const isWishlisted = wishlist.includes(productId);
         
         html += `
-          <article class="product-card" id="product-${productId}">
-            <a href="product.html?id=${productId}" class="product-image-wrapper">
-              <img class="product-img" src="${product.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop'}" alt="${product.name}">
+          <article class="product-card" id="product-${window.escapeHtml(productId)}">
+            <a href="product.html?id=${window.escapeHtml(productId)}" class="product-image-wrapper" style="display: block; position: relative;">
+              <img class="product-img" src="${window.escapeHtml(product.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop')}" alt="${window.escapeHtml(product.name)}">
               ${product.featured ? '<span class="product-badge featured">Featured</span>' : ''}
               ${outOfStock ? '<div class="ribbon-wrapper"><div class="ribbon-sold-out">Sold Out</div></div>' : ''}
+              <button class="wishlist-btn-overlay ${isWishlisted ? 'active' : ''}" aria-label="Add to Wishlist" onclick="event.preventDefault(); event.stopPropagation(); window.toggleWishlist('${window.escapeHtml(productId)}', this);">
+                <i class="${isWishlisted ? 'fas' : 'far'} fa-heart"></i>
+              </button>
             </a>
             <div class="product-info">
-              <span class="product-category">${product.category || 'Garments'}</span>
-              <a href="product.html?id=${productId}"><h3 class="product-title">${product.name}</h3></a>
+              <span class="product-category">${window.escapeHtml(product.category || 'Garments')}</span>
+              <a href="product.html?id=${window.escapeHtml(productId)}"><h3 class="product-title">${window.escapeHtml(product.name)}</h3></a>
               <div class="product-price">₹${Number(product.price).toFixed(2)}</div>
+              <div class="product-swatches">
+                ${swatchesHtml}
+              </div>
               ${outOfStock ? '<div class="product-out-of-stock">Sold Out</div>' : ''}
             </div>
           </article>
@@ -192,6 +384,7 @@
             category: "Lounge",
             featured: true,
             imageUrl: "https://images.unsplash.com/photo-1544441893-675973e31985?w=600&auto=format&fit=crop",
+            colors: ["#FAF9F6", "#C5A880"],
             stock: 5
           },
           {
@@ -201,6 +394,7 @@
             category: "Tailoring",
             featured: true,
             imageUrl: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&auto=format&fit=crop",
+            colors: ["#0F172A", "#701A75"],
             stock: 2
           },
           {
@@ -210,6 +404,7 @@
             category: "Knitwear",
             featured: true,
             imageUrl: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&auto=format&fit=crop",
+            colors: ["#374151", "#78716C"],
             stock: 12
           },
           {
@@ -219,6 +414,7 @@
             category: "Accessories",
             featured: true,
             imageUrl: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop",
+            colors: ["#78350F", "#1C1C1C"],
             stock: 0
           }
         ];
@@ -229,19 +425,37 @@
       const mockItems = savedProducts.filter(p => p.featured).slice(0, 4);
 
       let html = "";
+      const wishlist = JSON.parse(localStorage.getItem("boutique_wishlist") || "[]");
       mockItems.forEach(item => {
         const outOfStock = item.stock <= 0;
+        const colors = item.colors || [];
+        const swatchesHtml = colors.map((col, cIdx) => {
+          const imgUrl = (item.colorImages && item.colorImages[col]) || item.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop';
+          const resolvedColor = window.getColorHex ? window.getColorHex(col) : col;
+          return `
+            <span class="swatch-dot ${cIdx === 0 ? 'active' : ''}" style="background-color: ${resolvedColor};" data-img="${window.escapeHtml(imgUrl)}" onclick="event.preventDefault(); event.stopPropagation(); window.swapCardImage(this);" title="${window.escapeHtml(col)}"></span>
+          `;
+        }).join('');
+        
+        const isWishlisted = wishlist.includes(item.id);
+        
         html += `
           <article class="product-card">
-            <a href="product.html?id=${item.id}" class="product-image-wrapper">
-              <img class="product-img" src="${item.imageUrl}" alt="${item.name}">
+            <a href="product.html?id=${window.escapeHtml(item.id)}" class="product-image-wrapper" style="display: block; position: relative;">
+              <img class="product-img" src="${window.escapeHtml(item.imageUrl)}" alt="${window.escapeHtml(item.name)}">
               <span class="product-badge featured">Featured</span>
               ${outOfStock ? '<div class="ribbon-wrapper"><div class="ribbon-sold-out">Sold Out</div></div>' : ''}
+              <button class="wishlist-btn-overlay ${isWishlisted ? 'active' : ''}" aria-label="Add to Wishlist" onclick="event.preventDefault(); event.stopPropagation(); window.toggleWishlist('${window.escapeHtml(item.id)}', this);">
+                <i class="${isWishlisted ? 'fas' : 'far'} fa-heart"></i>
+              </button>
             </a>
             <div class="product-info">
-              <span class="product-category">${item.category}</span>
-              <a href="product.html?id=${item.id}"><h3 class="product-title">${item.name}</h3></a>
+              <span class="product-category">${window.escapeHtml(item.category)}</span>
+              <a href="product.html?id=${window.escapeHtml(item.id)}"><h3 class="product-title">${window.escapeHtml(item.name)}</h3></a>
               <div class="product-price">₹${Number(item.price).toFixed(2)}</div>
+              <div class="product-swatches">
+                ${swatchesHtml}
+              </div>
               ${outOfStock ? '<div class="product-out-of-stock">Sold Out</div>' : ''}
             </div>
           </article>

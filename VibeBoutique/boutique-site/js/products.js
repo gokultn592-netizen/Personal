@@ -225,11 +225,21 @@ function setupSorting() {
   });
 }
 
+// Global active filter state
+let activeFilter = "all"; // "all" | "wishlist" | "sale" | "featured"
+
 // URL parameters mapping
 function handleQueryParams() {
   const params = new URLSearchParams(window.location.search);
   const catParam = params.get("category");
   const filterParam = params.get("filter");
+  const searchParam = params.get("search");
+
+  if (searchParam) {
+    searchQuery = searchParam.toLowerCase().trim();
+    const searchInput = document.getElementById("search-input");
+    if (searchInput) searchInput.value = searchParam;
+  }
 
   if (catParam) {
     activeCategory = catParam;
@@ -238,11 +248,13 @@ function handleQueryParams() {
       document.querySelectorAll(".filter-tab").forEach(t => t.classList.remove("active"));
       matchingTab.classList.add("active");
     }
-  } else if (filterParam === "new") {
-    // Set sorting to newest arrivals
-    sortBy = "newest";
-    const sortSelect = document.getElementById("sort-select");
-    if (sortSelect) sortSelect.value = "newest";
+  } else if (filterParam) {
+    activeFilter = filterParam;
+    if (filterParam === "new" || filterParam === "newest") {
+      sortBy = "newest";
+      const sortSelect = document.getElementById("sort-select");
+      if (sortSelect) sortSelect.value = "newest";
+    }
   }
 }
 
@@ -250,6 +262,22 @@ function handleQueryParams() {
 function renderProducts() {
   const grid = document.getElementById("products-grid");
   if (!grid) return;
+
+  // Update Page Title Text dynamically
+  const titleEl = document.querySelector(".section-title");
+  if (titleEl) {
+    if (activeFilter === "wishlist") {
+      titleEl.textContent = "Your Wishlist";
+    } else if (activeFilter === "sale") {
+      titleEl.textContent = "Exclusive Offers";
+    } else if (activeFilter === "featured") {
+      titleEl.textContent = "Featured Collection";
+    } else if (activeCategory !== "all") {
+      titleEl.textContent = `${activeCategory} Collection`;
+    } else {
+      titleEl.textContent = "Explore Collection";
+    }
+  }
 
   // 1. Filtering
   let filtered = allProducts.filter(product => {
@@ -261,7 +289,18 @@ function renderProducts() {
       product.name.toLowerCase().includes(searchQuery) || 
       (product.description && product.description.toLowerCase().includes(searchQuery));
       
-    return matchesCategory && matchesSearch;
+    // Special filter check
+    let matchesFilter = true;
+    if (activeFilter === "wishlist") {
+      const wishlist = JSON.parse(localStorage.getItem("boutique_wishlist") || "[]");
+      matchesFilter = wishlist.includes(product.id);
+    } else if (activeFilter === "sale") {
+      matchesFilter = product.price < 200 || product.featured;
+    } else if (activeFilter === "featured") {
+      matchesFilter = product.featured === true;
+    }
+      
+    return matchesCategory && matchesSearch && matchesFilter;
   });
 
   // 2. Sorting
@@ -293,26 +332,49 @@ function renderProducts() {
   }
 
   let html = "";
+  const wishlist = JSON.parse(localStorage.getItem("boutique_wishlist") || "[]");
   filtered.forEach(product => {
     const outOfStock = product.stock <= 0;
+    const colors = product.colors || [];
+    const swatchesHtml = colors.map((col, cIdx) => {
+      const imgUrl = (product.colorImages && product.colorImages[col]) || product.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop';
+      const resolvedColor = window.getColorHex ? window.getColorHex(col) : col;
+      return `
+        <span class="swatch-dot ${cIdx === 0 ? 'active' : ''}" style="background-color: ${resolvedColor};" data-img="${imgUrl}" onclick="event.preventDefault(); event.stopPropagation(); window.swapCardImage(this);" title="${col}"></span>
+      `;
+    }).join('');
+    
+    const isWishlisted = wishlist.includes(product.id);
     
     html += `
       <article class="product-card">
-        <a href="product.html?id=${product.id}" class="product-image-wrapper">
-          <img class="product-img" src="${product.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop'}" alt="${product.name}" loading="lazy">
+        <a href="product.html?id=${window.escapeHtml(product.id)}" class="product-image-wrapper" style="display: block; position: relative;">
+          <img class="product-img" src="${window.escapeHtml(product.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop')}" alt="${window.escapeHtml(product.name)}" loading="lazy">
           ${product.featured ? '<span class="product-badge featured">Featured</span>' : ''}
           ${outOfStock ? '<div class="ribbon-wrapper"><div class="ribbon-sold-out">Sold Out</div></div>' : ''}
+          <button class="wishlist-btn-overlay ${isWishlisted ? 'active' : ''}" aria-label="Add to Wishlist" onclick="event.preventDefault(); event.stopPropagation(); window.toggleWishlist('${window.escapeHtml(product.id)}', this);">
+            <i class="${isWishlisted ? 'fas' : 'far'} fa-heart"></i>
+          </button>
         </a>
         <div class="product-info">
-          <span class="product-category">${product.category || 'Garments'}</span>
-          <a href="product.html?id=${product.id}"><h3 class="product-title">${product.name}</h3></a>
+          <span class="product-category">${window.escapeHtml(product.category || 'Garments')}</span>
+          <a href="product.html?id=${window.escapeHtml(product.id)}"><h3 class="product-title">${window.escapeHtml(product.name)}</h3></a>
           <div class="product-price">₹${Number(product.price).toFixed(2)}</div>
+          <div class="product-swatches">
+            ${swatchesHtml}
+          </div>
+          ${outOfStock ? '<div class="product-out-of-stock">Sold Out</div>' : ''}
         </div>
       </article>
     `;
   });
   grid.innerHTML = html;
 }
+
+// Listen to global wishlist changes for real-time removal on the wishlist page
+window.addEventListener("wishlistChanged", () => {
+  renderProducts();
+});
 
 // BFCache / History Navigation Back Reload
 window.addEventListener("pageshow", async (event) => {

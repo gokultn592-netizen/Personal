@@ -6,6 +6,19 @@
   <title>Joe Boutique — Product Details</title>
   <meta name="description" content="View product specifications, configure size or color variations, and prepare your custom selection for checkout.">
   <link rel="stylesheet" href="css/style.css">
+  
+  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta property="og:type" content="product">
+  <meta property="og:title" content="Premium Curated Product">
+  <meta property="og:description" content="View specifications, variations, and checkout securely.">
+  <meta property="og:image" content="">
+  <meta property="og:url" content="">
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:title" content="Premium Curated Product">
+  <meta property="twitter:description" content="View specifications, variations, and checkout securely.">
+  <meta property="twitter:image" content="">
 </head>
 <body>
 
@@ -31,7 +44,7 @@
     import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { db, isConfigured } from "./js/firebase-config.js";
     import { mockProducts } from "./js/products.js";
-    import { updateCartBadge } from "./js/main.js";
+    import { updateCartBadge, appSettings } from "./js/main.js";
 
     let activeProduct = null;
     let selectedSize = "";
@@ -99,10 +112,7 @@
         return;
       }
 
-      // Set page Title tag
-      document.title = `${activeProduct.name} — Joe Boutique`;
-
-      // 4. Render product information template
+      // 4. Render product information variables
       const sizeOptions = activeProduct.sizes || [];
       const colorOptions = activeProduct.colors || [];
 
@@ -110,12 +120,70 @@
       if (sizeOptions.length > 0) selectedSize = sizeOptions[0];
       if (colorOptions.length > 0) selectedColor = colorOptions[0];
 
+      let mainImgUrl = activeProduct.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop';
+      if (selectedColor && activeProduct.colorImages && activeProduct.colorImages[selectedColor]) {
+        mainImgUrl = activeProduct.colorImages[selectedColor];
+      }
+
+      // Set page Title tag dynamically using stored appSettings
+      document.title = `${activeProduct.name} — ${appSettings.shopName}`;
+
+      // Update meta description
+      const descMeta = document.querySelector('meta[name="description"]');
+      if (descMeta) {
+        descMeta.setAttribute("content", activeProduct.description || "View specifications, variations, and checkout securely.");
+      }
+
+      // Helper to dynamically set or create meta tags
+      const setMeta = (property, content) => {
+        let el = document.querySelector(`meta[property="${property}"]`);
+        if (!el) {
+          el = document.createElement("meta");
+          el.setAttribute("property", property);
+          document.head.appendChild(el);
+        }
+        el.setAttribute("content", content);
+      };
+
+      setMeta("og:title", `${activeProduct.name} — ${appSettings.shopName}`);
+      setMeta("og:description", activeProduct.description || "View specifications, variations, and checkout securely.");
+      setMeta("og:image", mainImgUrl);
+      setMeta("og:url", window.location.href);
+
+      setMeta("twitter:title", `${activeProduct.name} — ${appSettings.shopName}`);
+      setMeta("twitter:description", activeProduct.description || "View specifications, variations, and checkout securely.");
+      setMeta("twitter:image", mainImgUrl);
+
+      // Add JSON-LD Structured Data Schema for rich Google search results
+      let schemaScript = document.getElementById("json-ld-product-schema");
+      if (!schemaScript) {
+        schemaScript = document.createElement("script");
+        schemaScript.id = "json-ld-product-schema";
+        schemaScript.type = "application/ld+json";
+        document.head.appendChild(schemaScript);
+      }
+      schemaScript.textContent = JSON.stringify({
+        "@context": "https://schema.org/",
+        "@type": "Product",
+        "name": activeProduct.name,
+        "image": [mainImgUrl],
+        "description": activeProduct.description || "View specifications, variations, and checkout securely.",
+        "offers": {
+          "@type": "Offer",
+          "url": window.location.href,
+          "priceCurrency": "INR",
+          "price": activeProduct.price,
+          "itemCondition": "https://schema.org/NewCondition",
+          "availability": activeProduct.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+        }
+      });
+
       container.innerHTML = `
         <div class="product-detail-layout">
           <!-- Gallery -->
           <div class="product-detail-gallery" style="position: relative;">
             <div class="main-image-container" style="position: relative;">
-              <img id="detail-main-img" src="${activeProduct.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop'}" alt="${activeProduct.name}">
+              <img id="detail-main-img" src="${window.escapeHtml(mainImgUrl)}" alt="${window.escapeHtml(activeProduct.name)}">
               <div id="sold-out-overlay" style="display: none; position: absolute; inset: 0; background: rgba(28, 28, 28, 0.25); backdrop-filter: blur(2px); border-radius: var(--radius-sm); pointer-events: none; z-index: 5;"></div>
               <div id="detail-sold-out-ribbon" class="ribbon-wrapper" style="display: none;">
                 <div class="ribbon-sold-out">Sold Out</div>
@@ -125,11 +193,11 @@
 
           <!-- Info -->
           <div class="product-detail-info">
-            <span class="detail-category">${activeProduct.category || 'Garments'}</span>
-            <h1 class="detail-title">${activeProduct.name}</h1>
+            <span class="detail-category">${window.escapeHtml(activeProduct.category || 'Garments')}</span>
+            <h1 class="detail-title">${window.escapeHtml(activeProduct.name)}</h1>
             <div class="detail-price">₹${Number(activeProduct.price).toFixed(2)}</div>
             
-            <p class="detail-description">${activeProduct.description || 'No description available for this curated item.'}</p>
+            <p class="detail-description">${window.escapeHtml(activeProduct.description || 'No description available for this curated item.')}</p>
             
             <div class="options-section">
               <!-- Sizes -->
@@ -180,19 +248,24 @@
 
       // 5. Attach event listeners & run initial stock check
       setupDetailPageEvents();
-      updateStockUIForSelectedSize();
+      updateStockUIForSelectedVariation();
     }
 
-    function getStockForSize(size) {
-      if (!size) return activeProduct.stock || 0;
-      if (activeProduct.sizesStock && activeProduct.sizesStock[size] !== undefined) {
+    function getStockForVariation(size, color) {
+      if (color && size && activeProduct.variantStock && activeProduct.variantStock[color] && activeProduct.variantStock[color][size] !== undefined) {
+        return activeProduct.variantStock[color][size];
+      }
+      if (color && activeProduct.variantStock && typeof activeProduct.variantStock[color] === "number") {
+        return activeProduct.variantStock[color];
+      }
+      if (size && activeProduct.sizesStock && activeProduct.sizesStock[size] !== undefined) {
         return activeProduct.sizesStock[size];
       }
       return activeProduct.stock || 0;
     }
 
-    function updateStockUIForSelectedSize() {
-      const currentStock = getStockForSize(selectedSize);
+    function updateStockUIForSelectedVariation() {
+      const currentStock = getStockForVariation(selectedSize, selectedColor);
       const outOfStockForSize = currentStock <= 0;
       
       // Update availability text
@@ -269,7 +342,7 @@
           const preview = document.getElementById("size-preview");
           if (preview) preview.textContent = selectedSize;
           
-          updateStockUIForSelectedSize();
+          updateStockUIForSelectedVariation();
         });
       }
 
@@ -284,6 +357,18 @@
           selectedColor = btn.getAttribute("data-color");
           const preview = document.getElementById("color-preview");
           if (preview) preview.textContent = selectedColor;
+
+          // Swap main image dynamically
+          const mainImg = document.getElementById("detail-main-img");
+          if (mainImg) {
+            if (activeProduct.colorImages && activeProduct.colorImages[selectedColor]) {
+              mainImg.src = activeProduct.colorImages[selectedColor];
+            } else {
+              mainImg.src = activeProduct.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop';
+            }
+          }
+
+          updateStockUIForSelectedVariation();
         });
       }
 
@@ -297,13 +382,13 @@
           if (quantity > 1) {
             quantity--;
             qtyInput.value = quantity;
-            qtyPlus.disabled = quantity >= getStockForSize(selectedSize);
+            qtyPlus.disabled = quantity >= getStockForVariation(selectedSize, selectedColor);
             qtyMinus.disabled = quantity <= 1;
           }
         });
 
         qtyPlus.addEventListener("click", () => {
-          const currentStock = getStockForSize(selectedSize);
+          const currentStock = getStockForVariation(selectedSize, selectedColor);
           if (quantity < currentStock) {
             quantity++;
             qtyInput.value = quantity;
@@ -317,7 +402,7 @@
       const cartBtn = document.getElementById("add-to-cart-btn");
       if (cartBtn) {
         cartBtn.addEventListener("click", () => {
-          const currentStock = getStockForSize(selectedSize);
+          const currentStock = getStockForVariation(selectedSize, selectedColor);
           if (currentStock <= 0) return;
 
           addToCartLocal({
