@@ -223,8 +223,11 @@ async function loadUserOrderHistory(user) {
   let orders = [];
   let returns = [];
 
+  console.log("loadUserOrderHistory: Starting history fetch. isConfigured =", isConfigured, "User UID =", user.uid);
+
   if (isConfigured) {
     try {
+      console.log("loadUserOrderHistory: Querying orders for buyerUid =", user.uid);
       // 1. Fetch user orders from Firestore (without orderBy to avoid index requirement)
       const ordersQuery = query(
         collection(db, "orders"),
@@ -235,6 +238,8 @@ async function loadUserOrderHistory(user) {
         orders.push({ id: doc.id, ...doc.data() });
       });
 
+      console.log("loadUserOrderHistory: Successfully fetched orders count =", orders.length);
+
       // Sort orders in-memory (newest first)
       orders.sort((a, b) => {
         const timeA = a.createdAt?.seconds || (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
@@ -242,6 +247,7 @@ async function loadUserOrderHistory(user) {
         return timeB - timeA;
       });
 
+      console.log("loadUserOrderHistory: Querying returns for buyerUid =", user.uid);
       // 2. Fetch user returns from Firestore
       const returnsQuery = query(
         collection(db, "returns"),
@@ -252,6 +258,8 @@ async function loadUserOrderHistory(user) {
         returns.push({ id: doc.id, ...doc.data() });
       });
 
+      console.log("loadUserOrderHistory: Successfully fetched returns count =", returns.length);
+
       // Sort returns in-memory (newest first)
       returns.sort((a, b) => {
         const timeA = a.createdAt?.seconds || (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
@@ -259,11 +267,12 @@ async function loadUserOrderHistory(user) {
         return timeB - timeA;
       });
     } catch (e) {
-      console.error("Firestore order history query failed, falling back to local mock:", e);
+      console.error("loadUserOrderHistory: Firestore query failed! Error details:", e);
       orders = getMockUserOrders(user);
       returns = getMockUserReturns(user);
     }
   } else {
+    console.log("loadUserOrderHistory: Demo mode active. Loading mock data from LocalStorage.");
     orders = getMockUserOrders(user);
     returns = getMockUserReturns(user);
   }
