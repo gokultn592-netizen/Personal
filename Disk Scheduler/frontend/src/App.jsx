@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowRight, Dices, Layers, BarChart2, Disc, Compass, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowRight, Layers, BarChart2, Disc, Compass } from 'lucide-react';
 import DiskChart from './components/DiskChart';
 import PlaybackControls from './components/PlaybackControls';
 import ComparisonView from './components/ComparisonView';
@@ -7,35 +7,25 @@ import { simulateDiskScheduling, compareDiskScheduling } from './utils/algorithm
 
 const ALGORITHMS = ['FCFS', 'SSTF', 'SCAN', 'C-SCAN', 'LOOK', 'C-LOOK'];
 
-const PRESETS = [
-  { name: 'Standard Textbook', queue: '98, 183, 37, 122, 14, 124, 65, 67', head: 53, size: 200, direction: 'left' },
-  { name: 'Clustered Requests', queue: '12, 18, 24, 175, 182, 189, 29, 35', head: 100, size: 200, direction: 'right' },
-  { name: 'Sequential Access', queue: '15, 30, 45, 60, 75, 90, 120, 150', head: 10, size: 200, direction: 'right' },
-  { name: 'Extreme Oscillations', queue: '5, 195, 12, 185, 25, 170, 35', head: 100, size: 200, direction: 'left' }
-];
-
 export default function App() {
   const [requestsInput, setRequestsInput] = useState('98, 183, 37, 122, 14, 124, 65, 67');
   const [initialHead, setInitialHead] = useState(53);
   const [diskSize, setDiskSize] = useState(200);
   const [direction, setDirection] = useState('left');
   const [selectedAlgo, setSelectedAlgo] = useState('FCFS');
-  const [activeTab, setActiveTab] = useState('chart'); // 'chart' | 'compare'
+  const [activeTab, setActiveTab] = useState('chart');
 
   const [result, setResult] = useState(null);
   const [comparisonData, setComparisonData] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Playback state
   const [activeStepIndex, setActiveStepIndex] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(600);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1000); // default 1x
 
-  const runSimulation = useCallback(() => {
+  // Real-time calculation: runs instantly on any input/algorithm change
+  useEffect(() => {
     setError('');
-    setLoading(true);
-
     try {
       const parsedRequests = requestsInput
         .split(',')
@@ -58,7 +48,6 @@ export default function App() {
         throw new Error(`Initial head position ${numHead} is out of disk bounds.`);
       }
 
-      // Perform instant client-side simulation (GitHub Pages / Standalone compatible)
       const data = simulateDiskScheduling({
         requests: parsedRequests,
         initial_head: numHead,
@@ -68,7 +57,7 @@ export default function App() {
       });
 
       setResult(data);
-      setActiveStepIndex(null); // Reset to full view
+      setActiveStepIndex(null);
 
       const compData = compareDiskScheduling({
         requests: parsedRequests,
@@ -79,34 +68,15 @@ export default function App() {
       setComparisonData(compData);
     } catch (err) {
       setError(err.message);
-    } finally {
-      setLoading(false);
+      setResult(null);
+      setComparisonData(null);
     }
   }, [requestsInput, initialHead, diskSize, direction, selectedAlgo]);
-
-  useEffect(() => {
-    runSimulation();
-  }, [selectedAlgo, direction, runSimulation]);
-
-  const loadPreset = (preset) => {
-    setRequestsInput(preset.queue);
-    setInitialHead(preset.head);
-    setDiskSize(preset.size);
-    setDirection(preset.direction);
-  };
-
-  const generateRandomQueue = () => {
-    const size = Number(diskSize) || 200;
-    const count = 8;
-    const randoms = Array.from({ length: count }, () => Math.floor(Math.random() * (size - 10)) + 5);
-    setRequestsInput(randoms.join(', '));
-    setInitialHead(Math.floor(Math.random() * (size - 20)) + 10);
-  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 md:p-10 font-sans selection:bg-sky-500 selection:text-white">
       <div className="max-w-7xl mx-auto space-y-8">
-        
+
         {/* Header */}
         <header className="border-b border-slate-800 pb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -125,7 +95,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* View Mode Toggle */}
           <div className="flex bg-slate-900 border border-slate-800 p-1.5 rounded-xl">
             <button
               onClick={() => setActiveTab('chart')}
@@ -151,30 +120,6 @@ export default function App() {
             </button>
           </div>
         </header>
-
-        {/* Preset & Quick Action Row */}
-        <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-900/60 border border-slate-800/80 p-3.5 rounded-xl">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-slate-400 font-semibold uppercase tracking-wider text-[11px] mr-1">Presets:</span>
-            {PRESETS.map((preset) => (
-              <button
-                key={preset.name}
-                onClick={() => loadPreset(preset)}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg border border-slate-700/60 transition"
-              >
-                {preset.name}
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={generateRandomQueue}
-            className="flex items-center space-x-1.5 px-3 py-1.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 rounded-lg transition font-medium"
-          >
-            <Dices className="w-3.5 h-3.5" />
-            <span>Random Queue</span>
-          </button>
-        </div>
 
         {/* Algorithm Tabs */}
         <div className="flex flex-wrap gap-2">
@@ -246,17 +191,6 @@ export default function App() {
               <option value="right">Towards High (Right)</option>
             </select>
           </div>
-
-          <div className="md:col-span-12 flex justify-end">
-            <button
-              onClick={runSimulation}
-              disabled={loading}
-              className="flex items-center space-x-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-sky-500/20 transition duration-200"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              <span>Run Simulation</span>
-            </button>
-          </div>
         </div>
 
         {/* Error Alert */}
@@ -269,8 +203,6 @@ export default function App() {
         {/* Main Content View */}
         {activeTab === 'chart' && result && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* Visual Trace Chart & Playback Section */}
             <div className="lg:col-span-2 space-y-5">
               <div className="flex items-center justify-between">
                 <div>
@@ -287,7 +219,6 @@ export default function App() {
                 </span>
               </div>
 
-              {/* Step Playback Controls */}
               <PlaybackControls
                 sequenceLength={result.sequence.length}
                 activeStepIndex={activeStepIndex}
@@ -298,7 +229,6 @@ export default function App() {
                 setPlaybackSpeed={setPlaybackSpeed}
               />
 
-              {/* Chart Visual Component */}
               <DiskChart
                 sequence={result.sequence}
                 diskSize={Number(diskSize)}
@@ -306,9 +236,7 @@ export default function App() {
               />
             </div>
 
-            {/* Metrics & Execution Breakdown */}
             <div className="space-y-5">
-              {/* Total Seek Distance Hero Metric */}
               <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 p-6 rounded-2xl shadow-xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/10 rounded-full blur-2xl pointer-events-none"></div>
                 <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">
@@ -323,13 +251,11 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Step-by-Step Execution Sequence */}
               <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
                 <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
                   <h3 className="text-sm font-bold text-slate-200">Execution Steps</h3>
                   <span className="text-xs text-slate-400 font-mono">{result.steps.length} transitions</span>
                 </div>
-
                 <div className="max-h-[360px] overflow-y-auto space-y-2 pr-2">
                   {result.steps.map((step, idx) => {
                     const isActive = activeStepIndex === idx + 1;
@@ -361,11 +287,9 @@ export default function App() {
                 </div>
               </div>
             </div>
-
           </div>
         )}
 
-        {/* Algorithm Comparison Tab */}
         {activeTab === 'compare' && (
           <ComparisonView
             comparisonData={comparisonData}
@@ -376,7 +300,6 @@ export default function App() {
             }}
           />
         )}
-
       </div>
     </div>
   );

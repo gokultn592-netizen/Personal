@@ -128,10 +128,10 @@ export default function PlaybackControls({
           onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
           className="bg-slate-950 border border-slate-700 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-sky-500"
         >
-          <option value={1000}>0.5x (1000ms)</option>
-          <option value={600}>1.0x (600ms)</option>
-          <option value={300}>2.0x (300ms)</option>
-          <option value={150}>4.0x (150ms)</option>
+          <option value={4000}>0.25x</option>
+          <option value={2000}>0.50x</option>
+          <option value={1333}>0.75x</option>
+          <option value={1000}>1.0x (default)</option>
         </select>
       </div>
     </div>

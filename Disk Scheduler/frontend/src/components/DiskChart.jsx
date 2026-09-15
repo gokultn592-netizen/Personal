@@ -173,19 +173,6 @@ export default function DiskChart({ sequence, diskSize, activeStepIndex = null }
               onMouseEnter={() => setHoveredNode({ val, idx, isStart, isBoundary })}
               onMouseLeave={() => setHoveredNode(null)}
             >
-              {/* Active Pulsing Ring */}
-              {isCurrentActive && (
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={12}
-                  fill="none"
-                  stroke="#38bdf8"
-                  strokeWidth="2"
-                  className="animate-ping"
-                />
-              )}
-
               {/* Node Outer Circle */}
               <circle
                 cx={cx}
