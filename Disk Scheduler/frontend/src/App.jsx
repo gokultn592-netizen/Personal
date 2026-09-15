@@ -6,6 +6,7 @@ import ComparisonView from './components/ComparisonView';
 import { simulateDiskScheduling, compareDiskScheduling } from './utils/algorithms';
 
 const ALGORITHMS = ['FCFS', 'SSTF', 'SCAN', 'C-SCAN', 'LOOK', 'C-LOOK'];
+const USES_DIRECTION = ['SCAN', 'C-SCAN', 'LOOK', 'C-LOOK'];
 
 export default function App() {
   const [requestsInput, setRequestsInput] = useState('98, 183, 37, 122, 14, 124, 65, 67');
@@ -178,14 +179,19 @@ export default function App() {
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-2 flex items-center gap-1">
-              <Compass className="w-3.5 h-3.5 text-sky-400" />
-              <span>Direction</span>
+            <label className={`block text-xs uppercase tracking-wider font-semibold mb-2 flex items-center gap-1 ${!USES_DIRECTION.includes(selectedAlgo) ? 'text-slate-600' : 'text-slate-400'}`}>
+              <Compass className={`w-3.5 h-3.5 ${!USES_DIRECTION.includes(selectedAlgo) ? 'text-slate-600' : 'text-sky-400'}`} />
+              <span>Direction {USES_DIRECTION.includes(selectedAlgo) ? '' : '(not used)'}</span>
             </label>
             <select
               value={direction}
               onChange={(e) => setDirection(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition"
+              disabled={!USES_DIRECTION.includes(selectedAlgo)}
+              className={`w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 transition ${
+                !USES_DIRECTION.includes(selectedAlgo)
+                  ? 'bg-slate-800/30 border border-slate-800/30 text-slate-500 cursor-not-allowed'
+                  : 'bg-slate-950 border border-slate-700/80 text-slate-100 focus:border-sky-500 focus:ring-sky-500'
+              }`}
             >
               <option value="left">Towards 0 (Left)</option>
               <option value="right">Towards High (Right)</option>
