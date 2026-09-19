@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+:root {
+  --background: #020617;
+  --foreground: #e2e8f0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --color-cyan-950: #082f49;
+  --color-cyan-900: #0e7490;
+  --color-cyan-800: #155e75;
+  --color-cyan-700: #0e7490;
+  --color-cyan-600: #0891b2;
+  --color-cyan-500: #06b6d4;
+  --color-cyan-400: #22d3ee;
+  --color-cyan-300: #67e8f9;
+  --color-slate-950: #020617;
+  --color-slate-900: #0f172a;
+  --color-slate-800: #1e293b;
+  --color-slate-700: #334155;
+  --color-rose-950: #4c0519;
+  --color-rose-900: #9f1239;
+  --color-rose-400: #fb7185;
+  --color-amber-400: #fbbf24;
+  --color-amber-300: #fcd34d;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #0891b2, #0e7490);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #22d3ee, #0891b2);
+}
+
+/* Range slider styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #0891b2 0%, #0e7490 100%);
+  outline: none;
+  transition: background 0.2s ease;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #22d3ee;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #22d3ee;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+}
+
+/* Glassmorphism utilities */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+}

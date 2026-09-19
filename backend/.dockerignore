@@ -1,0 +1,6 @@
+.git
+node_modules
+__pycache__
+*.pyc
+nqueens_solver
+nqueens_solver.exe
