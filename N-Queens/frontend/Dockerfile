@@ -1,5 +1,5 @@
 # Multi-stage production build for Next.js
-FROM node:20-alpine AS builder
+FROM --platform=linux/amd64 node:20-alpine AS builder
 WORKDIR /app
 
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -11,7 +11,7 @@ COPY . .
 RUN npm run build
 
 # --- Runner stage ---
-FROM node:20-alpine AS runner
+FROM --platform=linux/amd64 node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

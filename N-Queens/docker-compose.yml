@@ -1,5 +1,6 @@
 services:
   backend:
+    platform: linux/amd64
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -11,6 +12,7 @@ services:
       - nqueens-net
 
   frontend:
+    platform: linux/amd64
     build:
       context: ./frontend
       dockerfile: Dockerfile
