@@ -1,0 +1,41 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isAuth() && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return isVerified() && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+    }
+
+    // Note images: notes/{timestamp}.jpg
+    match /notes/{fileName} {
+      allow read: if isVerified();
+      allow write: if isVerified()
+                   && request.resource.size < 6 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if isAdmin();
+    }
+
+    // Avatars: profile_pics/{uid}.jpg — a user may only write their own.
+    match /profile_pics/{uid}.{ext} {
+      allow read: if isVerified();
+      allow write: if isVerified()
+                   && request.auth.uid == uid
+                   && request.resource.size < 4 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if isVerified() && (request.auth.uid == uid || isAdmin());
+    }
+
+    // Anything else is denied.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

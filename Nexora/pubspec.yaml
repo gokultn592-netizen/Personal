@@ -1,0 +1,65 @@
+name: nexora
+description: "Nexora Next Era - a verified, non-erasable academic notes platform."
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # State Management
+  provider: ^6.1.2
+
+  # Firebase Core
+  firebase_core: ^4.15.0
+  firebase_auth: ^6.7.0
+  cloud_firestore: ^6.10.0
+  firebase_storage: ^13.6.0
+  firebase_messaging: ^16.7.0
+
+  # Notifications
+  flutter_local_notifications: ^18.0.1
+
+  # Auth
+  google_sign_in: ^6.2.1
+
+  # Image Hosting & Networking
+  http: ^1.2.0
+  cached_network_image: ^3.4.1
+
+  url_launcher: ^6.2.0
+  google_fonts: ^6.2.1
+  webview_flutter: ^4.14.1
+  webview_flutter_android: ^4.14.1
+  webview_flutter_web: ^0.2.3+4
+  image_picker: ^1.2.3
+  file_picker: ^13.1.0
+  intl: ^0.19.0
+
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # Web platform interop
+  web: ^1.1.1
+  flutter_dotenv: ^5.2.0
+  permission_handler: ^11.3.1
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/materials/
+    - .env
+
+

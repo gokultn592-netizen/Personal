@@ -1,0 +1,201 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isDeveloper() {
+      return isAuth() && (
+        request.auth.token.email in ['gokultn592@gmail.com']
+      );
+    }
+    // True only once the caller has a document in users/, i.e. they have been
+    // vouched by an admin. Used to gate read access to the private ledger.
+    function isVerified() {
+      return isAuth() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isAuth() && (
+        isDeveloper() ||
+        userRole() in ['admin', 'superadmin']
+      );
+    }
+
+    function isSuperAdmin() {
+      return isAdmin() && (isDeveloper() || userRole() == 'superadmin');
+    }
+    // The genesis sentinel. Exists once the very first account has claimed it.
+    function genesisClaimed() {
+      return exists(/databases/$(database)/documents/bootstrap/initialized);
+    }
+    // True only for the single account that claimed the genesis slot.
+    //
+    // `AuthService` writes `bootstrap/initialized` *before* creating its own
+    // `users` record, so the sentinel is the authority on who bootstrapped —
+    // checking for its *absence* would race with the client's own write.
+    function isGenesisClaimer() {
+      return isAuth() && genesisClaimed() && (
+        get(/databases/$(database)/documents/bootstrap/initialized).data.claimedBy
+        == request.auth.uid
+      );
+    }
+
+    // ---------------------------------------------------------------------
+    // Genesis bootstrap sentinel — readable by any signed-in account so the
+    // client can render the correct onboarding path without a directory read.
+    // ---------------------------------------------------------------------
+    match /bootstrap/initialized {
+      allow get: if isAuth();
+      // Single-use: only the first account to write it succeeds, because the
+      // document cannot be created twice. `claimedBy` is bound to the caller.
+      allow create: if isAuth()
+        && !genesisClaimed()
+        && request.resource.data.claimedBy == request.auth.uid;
+      allow update, delete: if isDeveloper();
+    }
+
+    // ---------------------------------------------------------------------
+    // Verification gate. Self-readable while awaiting approval; visible to
+    // admins only.
+    // ---------------------------------------------------------------------
+    match /pendingUsers/{uid} {
+      allow get: if isAuth() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isAuth() && request.auth.uid == uid;
+      allow delete: if isAdmin();
+      allow update: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // Verified student directory.
+    //   get  — own record (needed by AuthGate before approval) or admin
+    //   list — verified students and admins only (never unapproved identities)
+    // ---------------------------------------------------------------------
+    match /users/{uid} {
+      allow get: if isAuth() && (request.auth.uid == uid || isAdmin());
+      allow list: if isVerified() || isAdmin();
+      allow create: if isAdmin() || (
+        // Genesis account: the single first member, self-elevating.
+        (
+          request.auth.uid == uid &&
+          isGenesisClaimer() &&
+          request.resource.data.role == 'superadmin' &&
+          request.resource.data.status == 'approved'
+        ) ||
+        // Nexus community approval mirrored in by the client. The client
+        // re-verifies the Nexus standing before writing; `approvedBy` records
+        // which gate admitted the user. Only these stamped fields may be set at
+        // creation — a self-registering user cannot claim `status: approved` or
+        // an approver seal, because the approver values below are the only ones
+        // the rules will accept for a non-admin, non-genesis create.
+        (
+          request.auth.uid == uid &&
+          request.resource.data.status == 'approved' &&
+          request.resource.data.role == 'student' &&
+          request.resource.data.approvedBy == 'nexus_community' &&
+          request.resource.data.isNexusMember == true
+        )
+      );
+
+      allow update: if isAuth() && (
+        // Self-service: student can only edit their own profile surface.
+        (
+          request.auth.uid == uid &&
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+            'role', 'adminColorHex', 'approvedBy', 'approverColorHex', 'status', 'uid'
+          ])
+        ) ||
+        // Superadmin role assignment (promotion / demotion only). Admins cannot alter biodata.
+        (
+          isSuperAdmin() &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['role', 'adminColorHex', 'approverColorHex', 'updatedAt'])
+        )
+      );
+      // Account deletion: users can delete their own account, and superadmins can purge.
+      allow delete: if isSuperAdmin() || (isAuth() && request.auth.uid == uid);
+    }
+
+    // ---------------------------------------------------------------------
+    // Academic ledger. Identity attribution is immutable: the author may
+    // revise content but can never rewrite who posted it, and only an admin
+    // may remove a document.
+    // ---------------------------------------------------------------------
+    match /notes/{noteId} {
+      allow read: if isVerified();
+      allow create: if isAuth() && (
+        request.resource.data.postedByUid == request.auth.uid &&
+        request.resource.data.authorName == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name &&
+        request.resource.data.authorRegNo == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.regNo
+      );
+      allow update: if isAuth() && (
+        resource.data.postedByUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'title', 'content', 'imageUrl', 'imageStoragePath', 'updatedAt'
+        ])
+      );
+      // Deletion restricted to superadmins only; author removal is handled by audit log (non-erasable ledger claim).
+      allow delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // Broadcast notifications derived from the ledger.
+    // ---------------------------------------------------------------------
+    match /noteNotifications/{notifId} {
+      allow read: if isVerified();
+      allow create: if isAuth() && (
+        request.resource.data.authorUid == request.auth.uid &&
+        request.resource.data.keys().hasAll(['noteId', 'noteTitle', 'timestamp'])
+      );
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // Deletion audit trail — append-only for clients, admin-curatable.
+    // ---------------------------------------------------------------------
+    match /noteDeletionLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuth() && (
+        request.resource.data.deletedByUid == request.auth.uid
+      );
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // Admin inbox for new candidate registrations (see AuthService).
+    //
+    // `request.resource.data.submittedAt == request.time` binds the write to
+    // this exact request, so a client cannot backdate an alert or forge one for
+    // a candidate who never registered.
+    // ---------------------------------------------------------------------
+    match /adminNotifications/{notifId} {
+      allow get, list: if isAdmin();
+      allow create: if isAuth() && (
+        request.resource.data.type == 'new_candidate_registration' &&
+        request.resource.data.uid is string &&
+        request.resource.data.submittedAt == request.time
+      );
+      allow update: if isAdmin() && (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------
+    // Admin-managed configuration (course catalog, etc).
+    // ---------------------------------------------------------------------
+    match /config/{document=**} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+  }
+}

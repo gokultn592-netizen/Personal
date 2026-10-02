@@ -1,0 +1,108 @@
+================================================================================
+NEXORA — SYSTEM ARCHITECTURE & AGENT TASK MATRIX (UPDATED RUNTIMES)
+File: memory/AGENT_MATRIX.txt
+================================================================================
+
+1. PROJECT MISSION
+--------------------------------------------------------------------------------
+Nexora is a cross-platform mobile application (Android & iOS) designed to restore
+institutional academic integrity. The platform eradicates anonymous question leaks
+and hoarding by enforcing an immutable, vouched academic ledger where every note,
+slot, and course is strictly tied to an admin-approved student identity.
+
+
+2. RUNTIME & AGENT ENVIRONMENT (NAMI WORKBENCH)
+--------------------------------------------------------------------------------
+- Claude Code (Top-Left):   Claude Code CLI via OmniRoute (Thalaivar AI)
+- Codex (Top-Right):         Codex CLI (GPT-5.6 Terra medium)
+- AntiGravity (Bottom-Left): Project Core & Admin Architecture
+- OpenCode (Bottom-Right):   OpenCode CLI (MiMo-V2.6-Flash Free)
+- Host Machine:              Windows (D:\Project\Nexora) / Termux for Android run
+
+
+3. SHARED DATA CONTRACTS & COLLECTIONS
+--------------------------------------------------------------------------------
+A. users/{uid} (Verified Student Directory)
+   - uid: String
+   - email: String
+   - name: String
+   - regNo: String (e.g., "23BDS0084")
+   - branch: String
+   - year: String
+   - phoneNo: String
+   - photoUrl: String?
+   - role: "superadmin" | "admin" | "student"
+   - adminColorHex: String? (Admin border ring and seal color)
+   - approvedBy: String (UID of the admin who approved them)
+   - approverColorHex: String (Hex code of the approving admin's seal)
+   - academic: Map
+       * facultyAdvisor: String
+       * coreSlot: String
+       * nptel: String
+       * extraCurricular: String
+       * clubs: List<String>
+   - courses: List<Map> [code, name, faculty, slot] (Max 7 courses)
+   - searchIndices: Map
+       * faculties: List<String> (All faculty names lowercased)
+       * regNoLower: String
+       * nameLower: String
+
+B. pendingUsers/{uid} (Verification Gate)
+   - uid: String
+   - email: String
+   - name: String
+   - regNo: String
+   - branch: String
+   - year: String
+   - phoneNo: String
+   - submittedAt: ServerTimestamp
+
+C. notes/{noteId} (Public Academic Ledger)
+   - id: String
+   - title: String?
+   - content: String
+   - imageUrl: String?
+   - postedByUid: String
+   - authorName: String
+   - authorRegNo: String
+   - timestamp: ServerTimestamp
+
+
+4. AGENT RESPONSIBILITY BREAKDOWN
+--------------------------------------------------------------------------------
+
+[PANE 1] Claude Code (OmniRoute - Thalaivar AI)
+Role: Backend Infrastructure, Firestore Transactions & State Gatekeeper
+Files:
+  - lib/services/auth_service.dart
+  - lib/services/firestore_service.dart
+  - lib/screens/auth/auth_gate.dart
+  - firestore.rules
+
+[PANE 2] Codex (GPT-5.6 Terra Medium)
+Role: App Shell & Deep Stateful Profile Editor
+Files:
+  - lib/screens/nexus/nexus_screen.dart (Completed)
+  - lib/screens/main_shell.dart
+  - lib/screens/profile/profile_edit_screen.dart
+
+[PANE 3] AntiGravity IDE Agent
+Role: Models, Theme & Admin Ledger
+Files:
+  - pubspec.yaml
+  - lib/core/theme.dart
+  - lib/models/user_model.dart
+  - lib/models/note_model.dart
+  - lib/screens/admin/admin_portal_screen.dart (Completed)
+  - lib/screens/notes/notes_screen.dart
+  - lib/screens/notes/post_note_sheet.dart
+
+[PANE 4] OpenCode (MiMo-V2.6-Flash Free)
+Role: UI Presentation, Authentication Screens & Member Cards
+Files:
+  - lib/screens/auth/login_screen.dart
+  - lib/screens/auth/register_screen.dart
+  - lib/screens/auth/pending_screen.dart
+  - lib/widgets/member_card.dart
+  - lib/screens/members/members_screen.dart
+================================================================================

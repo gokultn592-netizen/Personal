@@ -1,0 +1,28 @@
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    # NOTE: lib/features/** is excluded because it is an abandoned parallel
+    # architecture that does not compile against the current services (it calls
+    # auth.registerUser, firestore.createNote, auth.currentUser?.role — none of
+    # which exist). Remove this exclusion when the folder is deleted so the
+    # analyzer can see the whole tree again.
+    - lib/features/**
+  errors:
+    deprecated_member_use: ignore
+    use_build_context_synchronously: ignore
+    unnecessary_to_list_in_spreads: ignore
+
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # `prefer_single_quotes` and `prefer_const_constructors` are deliberately not
+    # enabled: they were previously listed here *and* suppressed under
+    # `analyzer.errors`, so the rules were active in the config and
+    # simultaneously silenced. The formatting preference is enforced by
+    # `dart format` instead.
+    prefer_final_locals: true
+    unnecessary_lambdas: true

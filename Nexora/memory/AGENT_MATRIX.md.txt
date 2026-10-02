@@ -1,0 +1,154 @@
+# NEXORA — SYSTEM ARCHITECTURE & AGENT TASK MATRIX (UPDATED)
+
+## Project Mission
+Nexora is a cross-platform mobile application (Android & iOS) designed to restore institutional academic integrity. The platform eradicates anonymous question leaks and hoarding by enforcing an immutable, vouched academic ledger where every note, slot, and course is strictly tied to an admin-approved student identity.
+
+## Agent & Model Toolchain Configuration
+- **AntiGravity IDE:** Primary workspace orchestrator, root project initialization, data model definitions, and system-level screens.
+- **Claude Code (via OmniRoute / CLI):** Principal Backend Architect, handling Firebase atomic transactions, Firestore rules, and reactive authentication streams.
+- **OpenAI Agent / Modern Codex Endpoint (via OmniRoute / Workbench):** Complex UI Form Engineer, handling multi-nested stateful forms (7-course matrix, clubs dynamic array), image uploads, and the PWA WebView bridge.
+- **OpenCode (via OmniRoute / CLI):** Presentation Layer Engineer, building Material 3 cards, authentication views, directory lists, and verification styling.
+- **Nami AI Workbench / Termux (Redmi 12 5G):** Pipeline orchestration, git commits, dependency management, and on-device Flutter execution.
+
+---
+
+## Global Environment Constraints
+- Development Host: Android device running Termux (Redmi 12 5G).
+- Target Platforms: Android (local on-device APK) & iOS (GitHub Actions CI/CD).
+- Framework: Flutter (Material 3 enabled).
+- Design Theme: Slate OLED Hybrid (Canvas: `#0B0F14`, Surface: `#161C24`, Border: `#2D3748`, Accent: `#4F8BFF`).
+- Dependency Rule: Zero bloat. Pin core packages: `firebase_core`, `firebase_auth`, `cloud_firestore`, `firebase_storage`, `webview_flutter`, `cached_network_image`, `google_fonts`, `image_picker`, `intl`.
+
+---
+
+## Shared Data Contracts & Collections
+
+### 1. `users/{uid}` (Verified Student Directory)
+- `uid`: String
+- `email`: String
+- `name`: String
+- `regNo`: String (e.g., `23BDS0084`)
+- `branch`: String
+- `year`: String
+- `phoneNo`: String
+- `photoUrl`: String?
+- `role`: `'superadmin'` | `'admin'` | `'student'`
+- `adminColorHex`: String? (Assigned badge/ring color if admin)
+- `approvedBy`: String (UID of the admin who approved them)
+- `approverColorHex`: String (Hex code of the approving admin's seal)
+- `academic`: Map
+  - `facultyAdvisor`: String
+  - `coreSlot`: String
+  - `nptel`: String
+  - `extraCurricular`: String
+  - `clubs`: List<String>
+- `courses`: List<Map> (`code`, `name`, `faculty`, `slot`) — 7 courses
+- `searchIndices`: Map
+  - `faculties`: List<String> (lowercased)
+  - `regNoLower`: String
+  - `nameLower`: String
+
+### 2. `pendingUsers/{uid}` (Verification Gate)
+- `uid`: String
+- `email`: String
+- `name`: String
+- `regNo`: String
+- `branch`: String
+- `year`: String
+- `phoneNo`: String
+- `submittedAt`: ServerTimestamp
+
+### 3. `notes/{noteId}` (Public Academic Ledger)
+- `id`: String
+- `title`: String?
+- `content`: String
+- `imageUrl`: String?
+- `postedByUid`: String
+- `authorName`: String
+- `authorRegNo`: String
+- `timestamp`: ServerTimestamp
+
+---
+
+## Agent Task Allocation
+
+### 1. Claude Code
+**Role:** Backend Infrastructure, Firestore Transactions & State Gatekeeper  
+**Assigned Files:**
+- `lib/services/auth_service.dart`
+- `lib/services/firestore_service.dart`
+- `lib/screens/auth/auth_gate.dart`
+- `firestore.rules`
+
+**Responsibilities:**
+- Candidate registration via Firebase Auth writing initial state to `pendingUsers/{uid}`.
+- Implement atomic approval transactions (`runTransaction`): transfers document from `pendingUsers/{uid}` to `users/{uid}`, stamps `approvedBy` and `approverColorHex`, generates lowercased faculty search tokens, and deletes the pending document atomically.
+- Construct the reactive `AuthGate` router listening to `users/{uid}` snapshots to enforce zero-anonymity gatekeeping (Pending vs. Shell).
+- Production-grade `firestore.rules` restricting directory access to verified users and locking role assignment to super admin.
+
+---
+
+### 2. OpenAI Agent (Codex / Modern Model Endpoint)
+**Role:** Application Shell, WebView PWA Bridge & Self-Profile Editor  
+**Assigned Files:**
+- `lib/screens/main_shell.dart`
+- `lib/screens/nexus/nexus_screen.dart`
+- `lib/screens/profile/profile_edit_screen.dart`
+
+**Responsibilities:**
+- Build `MainShell` hosting the 3-tab Material 3 `NavigationBar` ("Notes", "Nexus", "Members") using an `IndexedStack` to preserve state.
+- Build `NexusScreen` using `webview_flutter`: full viewport display of the PWA without an app bar, a top 2px loading progress indicator, and hardware back-button handling using `PopScope`.
+- Build `ProfileEditScreen`: deep stateful form allowing the user to update their own data, manage a dynamic chip list for clubs (with add dialog and chip deletion), edit 7 distinct course items (Code, Faculty, Slot), and upload an avatar via `image_picker` to Firebase Storage (`profile_pics/{uid}.jpg`).
+
+---
+
+### 3. OpenCode
+**Role:** Presentation Layer, Ledger Components & Directory Views  
+**Assigned Files:**
+- `lib/screens/auth/login_screen.dart`
+- `lib/screens/auth/register_screen.dart`
+- `lib/screens/auth/pending_screen.dart`
+- `lib/widgets/member_card.dart`
+- `lib/screens/members/members_screen.dart`
+
+**Responsibilities:**
+- Build dark-mode login and candidate registration interfaces with clean input validation.
+- Build `PendingScreen` displaying submitted candidate details and a real-time Firestore listener awaiting approval.
+- Construct the `MemberCard` component:
+  - CircleAvatar with photo or initial letter.
+  - Border ring with `adminColorHex` if the student is an admin.
+  - Verification badge icon tinted with `approverColorHex`.
+  - Monospace formatting for Reg No and slot tags.
+  - Completely non-clickable when displaying peers (`InkWell` disabled).
+  - Highlighted border styling (`#4F8BFF`) and tap-to-edit interaction when `isSelf == true`.
+- Assemble `MembersScreen`: Pin viewer's self card at the top and scramble all other members below.
+
+---
+
+### 4. AntiGravity IDE Agent
+**Role:** Project Setup, Notes Feed Ledger & Admin Audit Engine  
+**Assigned Files:**
+- `pubspec.yaml`
+- `lib/main.dart`
+- `lib/core/theme.dart`
+- `lib/models/user_model.dart`
+- `lib/models/note_model.dart`
+- `lib/screens/notes/notes_screen.dart`
+- `lib/screens/notes/post_note_sheet.dart`
+- `lib/screens/admin/admin_portal_screen.dart`
+
+**Responsibilities:**
+- Manage dependency manifests, theme definitions (`NexoraTheme.darkTheme`), and strongly-typed Dart model classes.
+- Implement `NotesScreen`: Stream real-time posts from `notes/`, render cards with non-erasable author attribution, and provide full-screen image viewing.
+- Implement `PostNoteSheet`: Post creation modal enforcing zero-anonymity metadata stamps and uploading note images to Firebase Storage (`notes/{timestamp}.jpg`).
+- Implement `AdminPortalScreen`:
+  - Real-time pending requests queue with instant Approve/Reject actions.
+  - Multi-filter audit ledger with debounced search querying by Faculty, Slot, Reg No, or Student Name.
+  - Super Admin role promotion tool with distinct badge color assignments (`#9D4EDD`, `#F59E0B`, `#10B981`, `#06B6D4`, `#EF4444`).
+
+---
+
+## Agent Coordination Rules
+1. **Source of Truth:** Never alter variable names or Firestore collection keys defined in this matrix.
+2. **Design Integrity:** Import tokens exclusively from `lib/core/theme.dart`; do not invent custom colors outside the theme palette.
+3. **Compilation Safety:** Keep all packages strictly pinned and ensure files are independently compilable within Dart 3.x / Flutter 3.x in Termux.
