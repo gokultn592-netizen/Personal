@@ -1,0 +1,42 @@
+name: Deploy Multi Tab Sync to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Multi tab sync/**'
+      - '.github/workflows/deploy-multi-tab-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: './Multi tab sync/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: './Multi tab sync'
+        run: npm install
+
+      - name: Build
+        working-directory: './Multi tab sync'
+        run: npm run build
+
+      - name: Deploy dist/ to gh-pages branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: 'Multi tab sync/dist'
+          target-folder: multi-tab-sync
+          clean: false
