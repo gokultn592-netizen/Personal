@@ -33,10 +33,15 @@ jobs:
         working-directory: './Multi tab sync'
         run: npm run build
 
-      - name: Deploy dist/ to gh-pages branch
+      - name: Prepare deployment folder
+        run: |
+          mkdir -p dist-output
+          cp -r "Multi tab sync/dist/"* dist-output/
+
+      - name: Deploy to gh-pages branch
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
-          folder: 'Multi tab sync/dist'
+          folder: dist-output
           target-folder: multi-tab-sync
           clean: false
