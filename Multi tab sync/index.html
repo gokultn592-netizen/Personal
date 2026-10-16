@@ -4,6 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>multi-tab-sync</title>
+    <!-- No-flash initialization: apply theme & font size before React hydrates -->
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem("multi_tab_settings");
+          if (raw) {
+            var settings = JSON.parse(raw);
+            if (settings.theme === "dark") {
+              document.documentElement.classList.add("dark");
+            } else {
+              document.documentElement.classList.remove("dark");
+            }
+            if (settings.fontSize) {
+              document.documentElement.style.fontSize = settings.fontSize + "px";
+            }
+            if (settings.language) {
+              document.documentElement.lang = settings.language;
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
